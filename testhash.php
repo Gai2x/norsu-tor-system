@@ -1,5 +1,5 @@
 <?php
-echo password_hash("SuperAdmin123", PASSWORD_DEFAULT);
+echo password_hash("swish123", PASSWORD_DEFAULT);
 ?>
 
 <!-- debugging. put on login -->
