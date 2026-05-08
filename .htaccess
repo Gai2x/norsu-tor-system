@@ -1,0 +1,6 @@
+RewriteEngine On
+
+RewriteRule ^superadmin/dashboard/?$ public/superadmin/Dashboard.php [L,QSA]
+RewriteRule ^superadmin/store-user/?$ public/superadmin/StoreUser.php [L,QSA]
+RewriteRule ^superadmin/users/?$ public/superadmin/Users.php [L,QSA]
+RewriteRule ^superadmin/requests/?$ public/superadmin/Requests.php [L,QSA]

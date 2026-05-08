@@ -1,0 +1,11 @@
+/node_modules/
+/.vs/
+/uploads/*
+!/uploads/.gitkeep
+.env
+vendor/
+.env
+config/google.php
+
+.DS_Store
+Thumbs.db
