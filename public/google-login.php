@@ -1,5 +1,6 @@
 <?php
 
+require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../model/UserModel.php';
 require_once __DIR__ . '/../controller/AuthController.php';
 require_once __DIR__ . '/../controller/GoogleAuthController.php';
