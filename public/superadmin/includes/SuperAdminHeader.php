@@ -86,8 +86,12 @@ if (!function_exists('superAdminNavClasses')) {
                 <span class="nav-text flex-1">Dashboard</span>
             </a>
             <a href="<?php echo $basePath; ?>/superadmin/users" class="sidebar-link <?php echo superAdminNavClasses('users'); ?>">
+                <i class="fas fa-user-graduate w-5 text-center"></i>
+                <span class="nav-text flex-1">Students</span>
+            </a>
+            <a href="<?php echo $basePath; ?>/superadmin/admins" class="sidebar-link <?php echo superAdminNavClasses('admins'); ?>">
                 <i class="fas fa-user-shield w-5 text-center"></i>
-                <span class="nav-text flex-1">Users & Admins</span>
+                <span class="nav-text flex-1">Admins</span>
             </a>
             <a href="<?php echo $basePath; ?>/superadmin/requests" class="sidebar-link <?php echo superAdminNavClasses('requests'); ?>">
                 <i class="fas fa-file-signature w-5 text-center"></i>

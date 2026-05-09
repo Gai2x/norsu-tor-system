@@ -8,14 +8,6 @@
                 <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold mt-2">System Dashboard</h2>
                 <p class="text-blue-100 text-base sm:text-lg mt-3 max-w-3xl">View system totals, monitor pending work, and audit admin actions.</p>
             </div>
-            <button
-                type="button"
-                data-modal-target="createUserModal"
-                data-modal-toggle="createUserModal"
-                class="inline-flex min-h-[48px] items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-blue-900 shadow-md transition hover:bg-blue-50"
-            >
-                <i class="fas fa-plus mr-2"></i>Create User
-            </button>
         </div>
     </div>
 
@@ -56,21 +48,50 @@
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <section class="xl:col-span-2 bg-white rounded-3xl shadow overflow-hidden">
             <div class="px-5 sm:px-8 py-6 border-b">
-                <h3 class="text-2xl sm:text-3xl font-bold text-gray-800">System Statistics</h3>
-                <p class="text-sm text-gray-500 mt-1">Current database totals across the portal.</p>
+                <h3 class="text-2xl sm:text-3xl font-bold text-gray-800">Students Overview</h3>
+                <p class="text-sm text-gray-500 mt-1">Quick search and filter student accounts.</p>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-5 sm:p-8">
-                <div class="rounded-2xl border border-gray-100 p-5">
-                    <p class="text-gray-500 text-sm">Students</p>
-                    <p class="text-3xl font-bold text-gray-800 mt-2"><?php echo (int) ($systemStats['total_students'] ?? 0); ?></p>
-                </div>
-                <div class="rounded-2xl border border-gray-100 p-5">
-                    <p class="text-gray-500 text-sm">All Requests</p>
-                    <p class="text-3xl font-bold text-gray-800 mt-2"><?php echo (int) ($systemStats['total_requests'] ?? 0); ?></p>
-                </div>
-                <div class="rounded-2xl border border-gray-100 p-5">
-                    <p class="text-gray-500 text-sm">Pending Appointments</p>
-                    <p class="text-3xl font-bold text-gray-800 mt-2"><?php echo (int) ($systemStats['pending_appointments'] ?? 0); ?></p>
+            <div class="p-6 space-y-6">
+                <form class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                    <div class="flex-1">
+                        <label for="dashboard-student-search" class="sr-only">Search students</label>
+                        <input id="dashboard-student-search" type="search" placeholder="Search name, email, student ID, or course" class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:ring-blue-100" />
+                    </div>
+                    <div class="flex gap-3">
+                        <select id="dashboard-course-filter" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:ring-blue-100">
+                            <option value="">All Courses</option>
+                            <option value="BSIT">BS Information Technology</option>
+                            <option value="BSCS">BS Computer Science</option>
+                            <option value="BSBA">BS Business Administration</option>
+                            <option value="BSF">BS Fisheries</option>
+                            <option value="BSC">BS Criminology</option>
+                            <option value="BSOA">BS Office Administration</option>
+                            <option value="BEED">BS Elementary Education</option>
+                            <option value="BSED">BS Secondary Education</option>
+                        </select>
+                        <select id="dashboard-year-filter" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:ring-blue-100">
+                            <option value="">All Years</option>
+                            <option value="2021">2021</option>
+                            <option value="2022">2022</option>
+                            <option value="2023">2023</option>
+                            <option value="2024">2024</option>
+                            <option value="2025">2025</option>
+                        </select>
+                        <select id="dashboard-status-filter" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:ring-blue-100">
+                            <option value="">All Statuses</option>
+                            <option value="has_id">Has student ID</option>
+                            <option value="missing_id">Missing student ID</option>
+                        </select>
+                        <select id="dashboard-request-status-filter" class="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:ring-blue-100">
+                            <option value="">All Requests</option>
+                            <option value="pending">Pending Requests</option>
+                            <option value="approved">Approved Requests</option>
+                            <option value="rejected">Rejected Requests</option>
+                        </select>
+                    </div>
+                </form>
+                <div id="dashboard-students-container" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <!-- Students will be loaded here via AJAX -->
                 </div>
             </div>
         </section>
@@ -97,56 +118,46 @@
     </div>
 </div>
 
-<div id="createUserModal" tabindex="-1" aria-hidden="true" class="fixed left-0 right-0 top-0 z-50 hidden h-[calc(100%-1rem)] max-h-full w-full overflow-y-auto overflow-x-hidden p-4 md:inset-0">
-    <div class="relative max-h-full w-full max-w-2xl">
-        <div class="relative rounded-3xl bg-white shadow-2xl">
-            <div class="flex items-start justify-between rounded-t-3xl border-b px-6 py-5 sm:px-8">
-                <div>
-                    <h3 class="text-2xl font-bold text-gray-900">Create User</h3>
-                    <p class="mt-1 text-sm text-gray-500">Create student, admin, or super admin accounts without leaving the dashboard.</p>
-                </div>
-                <button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-xl text-gray-400 transition hover:bg-gray-100 hover:text-gray-900" data-modal-hide="createUserModal">
-                    <span class="sr-only">Close modal</span>
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <form action="/Norsu_Tor/superadmin/store-user" method="POST" class="space-y-5 px-6 py-6 sm:px-8 sm:py-8">
-                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                    <div class="sm:col-span-2">
-                        <label for="create-user-name" class="mb-2 block text-sm font-semibold text-gray-700">Name</label>
-                        <input id="create-user-name" name="name" type="text" value="<?php echo htmlspecialchars($createUserOld['name'] ?? ''); ?>" class="block w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500" required>
+<script src="/Norsu_Tor/public/superadmin/js/superadmin-search.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const search = new SuperAdminSearch({
+        endpoint: '/Norsu_Tor/superadmin/ajax-search-students',
+        container: document.getElementById('dashboard-students-container'),
+        searchInput: document.getElementById('dashboard-student-search'),
+        filters: {
+            course: 'dashboard-course-filter',
+            year_level: 'dashboard-year-filter',
+            status: 'dashboard-status-filter',
+            request_status: 'dashboard-request-status-filter',
+        },
+        pageSize: 6,
+        itemTemplate: function(student) {
+            return `
+                <article class="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm transition hover:-translate-y-1 hover:border-slate-300 hover:bg-white">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Unique ID</p>
+                            <p class="text-lg font-semibold text-slate-900 mt-1">#${student.id}</p>
+                            <p class="text-sm text-slate-500">ID: ${student.student_id || 'N/A'}</p>
+                        </div>
                     </div>
-                    <div class="sm:col-span-2">
-                        <label for="create-user-email" class="mb-2 block text-sm font-semibold text-gray-700">Email</label>
-                        <input id="create-user-email" name="email" type="email" value="<?php echo htmlspecialchars($createUserOld['email'] ?? ''); ?>" class="block w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500" required>
+                    <div class="mt-4 space-y-2 text-sm text-slate-600">
+                        <p class="font-medium text-slate-900">${student.name}</p>
+                        <p>${student.email}</p>
+                        <p>${student.course || 'N/A'}</p>
                     </div>
-                    <div>
-                        <label for="create-user-password" class="mb-2 block text-sm font-semibold text-gray-700">Password</label>
-                        <input id="create-user-password" name="password" type="password" class="block w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500" required>
-                    </div>
-                    <div>
-                        <label for="create-user-role" class="mb-2 block text-sm font-semibold text-gray-700">Role</label>
-                        <select id="create-user-role" name="role" class="block w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500" required>
-                            <?php $selectedRole = $createUserOld['role'] ?? 'student'; ?>
-                            <option value="student" <?php echo $selectedRole === 'student' ? 'selected' : ''; ?>>Student</option>
-                            <option value="admin" <?php echo $selectedRole === 'admin' ? 'selected' : ''; ?>>Admin</option>
-                            <option value="superadmin" <?php echo $selectedRole === 'superadmin' ? 'selected' : ''; ?>>Super Admin</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                    <button type="button" data-modal-hide="createUserModal" class="inline-flex min-h-[46px] items-center justify-center rounded-2xl border border-gray-300 px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Cancel</button>
-                    <button type="submit" class="inline-flex min-h-[46px] items-center justify-center rounded-2xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800">
-                        <i class="fas fa-user-plus mr-2"></i>Create Account
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+                </article>
+            `;
+        },
+        onResults: function(data) {
+            // Optional callback
+        }
+    });
 
-<?php if (!empty($createUserErrors)): ?>
-    <?php $additionalScripts = ($additionalScripts ?? '') . "<script>window.addEventListener('load', function () { const toggle = document.querySelector('[data-modal-target=\"createUserModal\"]'); if (toggle) { toggle.click(); } });</script>"; ?>
-<?php endif; ?>
+    // Initial load
+    search.search();
+});
+</script>
 
 <?php include __DIR__ . '/../../public/superadmin/includes/SuperAdminFooter.php'; ?>

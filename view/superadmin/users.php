@@ -1,108 +1,144 @@
 <?php include __DIR__ . '/../../public/superadmin/includes/SuperAdminHeader.php'; ?>
 
 <div class="p-4 sm:p-6 lg:p-10 space-y-8">
-    <div>
-        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-800 mb-2">Users & Admins</h2>
-        <p class="text-gray-500 text-base sm:text-lg lg:text-2xl">Review system accounts and manage administrator access.</p>
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+            <p class="text-blue-600 text-sm font-semibold uppercase tracking-[0.3em]">Students</p>
+            <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">Student Accounts</h1>
+            <p class="text-slate-500 mt-2 max-w-2xl">Search and filter student accounts with real-time results.</p>
+        </div>
     </div>
 
     <?php if (!empty($notice)): ?>
-        <div class="rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-green-700 font-semibold"><?php echo htmlspecialchars($notice); ?></div>
+        <div class="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-emerald-700 font-semibold shadow-sm"><?php echo htmlspecialchars($notice); ?></div>
     <?php endif; ?>
 
     <?php if (!empty($errors)): ?>
-        <div class="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-red-700">
+        <div class="rounded-3xl border border-rose-200 bg-rose-50 px-5 py-4 text-rose-700 shadow-sm space-y-1">
             <?php foreach ($errors as $error): ?>
                 <p><?php echo htmlspecialchars($error); ?></p>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
 
-    <section class="bg-white rounded-3xl shadow overflow-hidden">
-        <div class="px-5 sm:px-8 py-6 border-b">
-            <h3 class="text-2xl sm:text-3xl font-bold text-gray-800">Admin Accounts</h3>
-            <p class="text-sm text-gray-500 mt-1">User creation now happens from the dashboard modal. This page stays focused on reviewing and updating existing accounts.</p>
+    <section class="bg-white rounded-3xl shadow-lg overflow-hidden">
+        <div class="border-b border-slate-200 px-6 py-5">
+            <h2 class="text-xl font-semibold text-slate-900">Search & Filter</h2>
+            <p class="text-sm text-slate-500 mt-1">Use search and filters to find specific students.</p>
         </div>
-        <div class="overflow-x-auto">
-            <table class="w-full min-w-[1180px] text-left">
-                <thead class="bg-gray-50 text-gray-600 uppercase text-sm">
-                    <tr>
-                        <th class="px-6 py-4">Name</th>
-                        <th class="px-6 py-4">Email</th>
-                        <th class="px-6 py-4">Admin ID</th>
-                        <th class="px-6 py-4">Department</th>
-                        <th class="px-6 py-4">New Password</th>
-                        <th class="px-6 py-4">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (!empty($admins)): ?>
-                        <?php foreach ($admins as $admin): ?>
-                            <?php $updateFormId = 'update-admin-' . (int) $admin['id']; ?>
-                            <tr class="border-t hover:bg-gray-50 align-top">
-                                <td class="px-6 py-4"><input form="<?php echo $updateFormId; ?>" name="name" value="<?php echo htmlspecialchars($admin['name']); ?>" class="w-full border border-gray-300 rounded-xl px-3 py-2" required></td>
-                                <td class="px-6 py-4"><input form="<?php echo $updateFormId; ?>" name="email" type="email" value="<?php echo htmlspecialchars($admin['email']); ?>" class="w-full border border-gray-300 rounded-xl px-3 py-2" required></td>
-                                <td class="px-6 py-4"><input form="<?php echo $updateFormId; ?>" name="student_id" value="<?php echo htmlspecialchars($admin['student_id']); ?>" class="w-full border border-gray-300 rounded-xl px-3 py-2" required></td>
-                                <td class="px-6 py-4"><input form="<?php echo $updateFormId; ?>" name="course" value="<?php echo htmlspecialchars($admin['course']); ?>" class="w-full border border-gray-300 rounded-xl px-3 py-2" required></td>
-                                <td class="px-6 py-4"><input form="<?php echo $updateFormId; ?>" name="password" type="password" placeholder="Leave unchanged" class="w-full border border-gray-300 rounded-xl px-3 py-2"></td>
-                                <td class="px-6 py-4">
-                                    <form id="<?php echo $updateFormId; ?>" method="POST">
-                                        <input type="hidden" name="action" value="update_admin">
-                                        <input type="hidden" name="admin_id" value="<?php echo (int) $admin['id']; ?>">
-                                    </form>
-                                    <div class="flex flex-wrap gap-2">
-                                        <button form="<?php echo $updateFormId; ?>" class="inline-flex min-h-[40px] items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Save</button>
-                                        <form method="POST" onsubmit="return confirm('Delete this admin account?');">
-                                            <input type="hidden" name="action" value="delete_admin">
-                                            <input type="hidden" name="admin_id" value="<?php echo (int) $admin['id']; ?>">
-                                            <button class="inline-flex min-h-[40px] items-center rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">Delete</button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <tr><td colspan="6" class="py-10 text-center text-gray-500">No admin accounts found.</td></tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+        
+        <div class="p-6 space-y-6">
+            <form class="space-y-4" id="student-search-form">
+                <div class="flex flex-col gap-3 lg:flex-row">
+                    <div class="flex-1">
+                        <label for="superadmin-student-search" class="sr-only">Search students</label>
+                        <input 
+                            id="superadmin-student-search" 
+                            type="search" 
+                            placeholder="Search name, email, student ID, or course" 
+                            class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:ring-blue-100" 
+                        />
+                    </div>
+                    <button type="button" onclick="studentSearch.reset()" class="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                        <i class="fas fa-redo mr-2"></i>Reset
+                    </button>
+                </div>
+
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <label class="block">
+                        <span class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Course</span>
+                        <select id="student-course-filter" class="mt-2 block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:ring-blue-100">
+                            <option value="">All Courses</option>
+                            <?php foreach ($courses as $course): ?>
+                                <option value="<?php echo htmlspecialchars($course); ?>"><?php echo htmlspecialchars($course); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Year Level</span>
+                        <select id="student-year-filter" class="mt-2 block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:ring-blue-100">
+                            <option value="">All Years</option>
+                            <?php foreach ($yearLevels as $year): ?>
+                                <option value="<?php echo htmlspecialchars($year); ?>"><?php echo htmlspecialchars($year); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Status</span>
+                        <select id="student-status-filter" class="mt-2 block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:ring-blue-100">
+                            <option value="">All Statuses</option>
+                            <?php foreach ($statuses as $value => $label): ?>
+                                <option value="<?php echo htmlspecialchars($value); ?>"><?php echo htmlspecialchars($label); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                </div>
+            </form>
         </div>
     </section>
 
-    <section class="bg-white rounded-3xl shadow overflow-hidden">
-        <div class="px-5 sm:px-8 py-6 border-b">
-            <h3 class="text-2xl sm:text-3xl font-bold text-gray-800">All System Users</h3>
-            <p class="text-sm text-gray-500 mt-1">Read-only overview of every account role.</p>
+    <section class="bg-white rounded-3xl shadow-lg overflow-hidden">
+        <div class="border-b border-slate-200 px-6 py-5">
+            <h2 class="text-lg font-semibold text-slate-900">Results</h2>
+            <p class="text-sm text-slate-500 mt-1">Student directory with filtering and real-time search.</p>
         </div>
-        <div class="overflow-x-auto">
-            <table class="w-full min-w-[900px] text-left">
-                <thead class="bg-gray-50 text-gray-600 uppercase text-sm">
-                    <tr>
-                        <th class="px-6 py-4">ID</th>
-                        <th class="px-6 py-4">Name</th>
-                        <th class="px-6 py-4">Email</th>
-                        <th class="px-6 py-4">Role</th>
-                        <th class="px-6 py-4">Created</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($users as $user): ?>
-                        <tr class="border-t hover:bg-gray-50">
-                            <td class="px-6 py-4 font-semibold">#<?php echo (int) $user['id']; ?></td>
-                            <td class="px-6 py-4"><?php echo htmlspecialchars($user['name']); ?></td>
-                            <td class="px-6 py-4"><?php echo htmlspecialchars($user['email']); ?></td>
-                            <td class="px-6 py-4">
-                                <span class="rounded-full px-3 py-1 text-xs font-semibold <?php echo $user['role'] === 'super_admin' ? 'bg-blue-100 text-blue-700' : ($user['role'] === 'admin' ? 'bg-indigo-100 text-indigo-700' : 'bg-green-100 text-green-700'); ?>">
-                                    <?php echo htmlspecialchars(str_replace('_', ' ', ucwords($user['role'], '_'))); ?>
-                                </span>
-                            </td>
-                            <td class="px-6 py-4"><?php echo !empty($user['created_at']) ? date('M d, Y', strtotime($user['created_at'])) : 'N/A'; ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+        <div id="students-container" class="grid gap-5 p-6 md:grid-cols-2 xl:grid-cols-3">
+            <!-- Students will be loaded here via AJAX -->
         </div>
     </section>
 </div>
+
+<script src="/Norsu_Tor/public/js/search-filter-manager.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const studentSearch = new SearchFilterManager({
+        endpoint: '/Norsu_Tor/superadmin/ajax-search-students',
+        container: document.getElementById('students-container'),
+        searchInput: document.getElementById('superadmin-student-search'),
+        filters: {
+            course: 'student-course-filter',
+            year_level: 'student-year-filter',
+            status: 'student-status-filter',
+        },
+        pageSize: 12,
+        itemTemplate: function(student) {
+            return `
+                <article class="group rounded-[2rem] border border-slate-200 bg-slate-50 p-6 shadow-sm transition hover:-translate-y-1 hover:border-slate-300 hover:bg-white">
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Unique ID</p>
+                            <p class="text-xl font-semibold text-slate-900 mt-2">#${student.id}</p>
+                            <p class="text-sm text-slate-500 mt-2">ID: ${student.student_id || 'N/A'}</p>
+                        </div>
+                        <button type="button" class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700" data-student-edit="${student.id}" data-student-id="${student.id}" data-student-name="${student.name}" data-student-email="${student.email}" data-student-student-id="${student.student_id}" data-student-course="${student.course}">
+                            <i class="fas fa-pen-to-square mr-2"></i>Edit
+                        </button>
+                    </div>
+                    <div class="mt-6 space-y-4 text-sm text-slate-600">
+                        <div class="grid gap-2">
+                            <span class="text-xs uppercase tracking-[0.25em] text-slate-400">Name</span>
+                            <p class="font-medium text-slate-900">${student.name}</p>
+                        </div>
+                        <div class="grid gap-2">
+                            <span class="text-xs uppercase tracking-[0.25em] text-slate-400">Email</span>
+                            <p>${student.email}</p>
+                        </div>
+                        <div class="grid gap-2">
+                            <span class="text-xs uppercase tracking-[0.25em] text-slate-400">Course</span>
+                            <p>${student.course || 'N/A'}</p>
+                        </div>
+                    </div>
+                </article>
+            `;
+        }
+    });
+
+    // Make search instance global for reset button
+    window.studentSearch = studentSearch;
+
+    // Initial load
+    studentSearch.search();
+});
+</script>
 
 <?php include __DIR__ . '/../../public/superadmin/includes/SuperAdminFooter.php'; ?>

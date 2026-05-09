@@ -13,6 +13,63 @@ class SuperAdminController
         $this->model = new SuperAdminModel($conn);
     }
 
+    public static function ajaxSearchStudents(): void
+    {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+            exit;
+        }
+
+        $viewData = SuperAdminPageController::boot('Ajax Students', 'Ajax Students');
+        $controller = new self($viewData['conn']);
+
+        $filters = [
+            'search' => trim($_GET['search'] ?? ''),
+            'course' => trim($_GET['course'] ?? ''),
+            'year_level' => trim($_GET['year_level'] ?? ''),
+            'status' => trim($_GET['status'] ?? ''),
+            'request_status' => trim($_GET['request_status'] ?? ''),
+        ];
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $pageSize = (int) ($_GET['pageSize'] ?? 12);
+
+        $totalStudents = $controller->model->countStudents($filters);
+        $students = $controller->model->getStudents($filters, $page, $pageSize);
+
+        echo json_encode([
+            'students' => $students,
+            'pagination' => [
+                'currentPage' => $page,
+                'pageSize' => $pageSize,
+                'totalItems' => $totalStudents,
+                'totalPages' => max(1, (int) ceil($totalStudents / $pageSize)),
+            ],
+            'filters' => $filters,
+        ]);
+        exit;
+    }
+
+    public static function ajaxCreateAdmin(): void
+    {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+            exit;
+        }
+
+        $viewData = SuperAdminPageController::boot('Ajax Create Admin', 'Ajax Create Admin');
+        $controller = new self($viewData['conn']);
+        $actorId = (int) ($_SESSION['user_id'] ?? 0);
+
+        $result = $controller->model->createAdmin($_POST, $actorId);
+
+        echo json_encode($result);
+        exit;
+    }
+
     public static function dashboard(): array
     {
         $viewData = SuperAdminPageController::boot(
@@ -38,11 +95,12 @@ class SuperAdminController
         ]);
     }
 
+
     public static function users(): array
     {
         $viewData = SuperAdminPageController::boot(
-            'Users and Admins',
-            'Manage administrator access',
+            'Student Accounts',
+            'Review student accounts and filters',
             [],
             'users'
         );
@@ -50,31 +108,76 @@ class SuperAdminController
         $controller = new self($viewData['conn']);
         $notice = null;
         $errors = [];
-        $actorId = (int) ($_SESSION['user_id'] ?? 0);
+        $filters = [
+            'search' => trim($_GET['search'] ?? ''),
+            'course' => trim($_GET['course'] ?? ''),
+            'year_level' => trim($_GET['year_level'] ?? ''),
+            'status' => trim($_GET['status'] ?? ''),
+        ];
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $pageSize = 12;
 
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $action = $_POST['action'] ?? '';
-            $result = ['success' => false, 'errors' => ['Invalid action.']];
-
-            if ($action === 'create_admin') {
-                $result = $controller->model->createAdmin($_POST, $actorId);
-                $notice = $result['success'] ? 'Admin account created.' : null;
-            } elseif ($action === 'update_admin') {
-                $result = $controller->model->updateAdmin((int) ($_POST['admin_id'] ?? 0), $_POST, $actorId);
-                $notice = $result['success'] ? 'Admin account updated.' : null;
-            } elseif ($action === 'delete_admin') {
-                $result = $controller->model->deleteAdmin((int) ($_POST['admin_id'] ?? 0), $actorId);
-                $notice = $result['success'] ? 'Admin account deleted.' : null;
-            }
-
-            if (!$result['success']) {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'update_student') {
+            $result = $controller->model->updateStudent((int) ($_POST['student_record_id'] ?? 0), $_POST, (int) ($_SESSION['user_id'] ?? 0));
+            if ($result['success']) {
+                $notice = 'Student account updated successfully.';
+            } else {
                 $errors = $result['errors'];
+                $filters['editStudentId'] = (int) ($_POST['student_record_id'] ?? 0);
+                $filters['editOld'] = $_POST;
+            }
+        }
+
+        $totalStudents = $controller->model->countStudents($filters);
+        $students = $controller->model->getStudents($filters, $page, $pageSize);
+
+        return array_merge($viewData, [
+            'students' => $students,
+            'filters' => $filters,
+            'courses' => $controller->model->getStudentCourses(),
+            'yearLevels' => $controller->model->getStudentYearLevels(),
+            'statuses' => $controller->model->getStudentStatuses(),
+            'pagination' => [
+                'currentPage' => $page,
+                'pageSize' => $pageSize,
+                'totalItems' => $totalStudents,
+                'totalPages' => max(1, (int) ceil($totalStudents / $pageSize)),
+            ],
+            'notice' => $notice,
+            'errors' => $errors,
+        ]);
+    }
+
+    public static function admins(): array
+    {
+        $viewData = SuperAdminPageController::boot(
+            'Admin Accounts',
+            'Manage administrator profiles safely',
+            [],
+            'admins'
+        );
+
+        $controller = new self($viewData['conn']);
+        $notice = null;
+        $errors = [];
+        $filters = [
+            'search' => trim($_GET['search'] ?? ''),
+        ];
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'update_admin') {
+            $result = $controller->model->updateAdmin((int) ($_POST['admin_id'] ?? 0), $_POST, (int) ($_SESSION['user_id'] ?? 0));
+            if ($result['success']) {
+                $notice = 'Admin account updated successfully.';
+            } else {
+                $errors = $result['errors'];
+                $filters['editAdminId'] = (int) ($_POST['admin_id'] ?? 0);
+                $filters['editOld'] = $_POST;
             }
         }
 
         return array_merge($viewData, [
-            'users' => $controller->model->getAllUsers(),
-            'admins' => $controller->model->getAdmins(),
+            'admins' => $controller->model->getAdmins($filters),
+            'filters' => $filters,
             'notice' => $notice,
             'errors' => $errors,
         ]);
@@ -164,6 +267,86 @@ class SuperAdminController
             $_SESSION['superadmin_create_user_errors'],
             $_SESSION['superadmin_create_user_old']
         );
+    }
+
+    public static function ajaxSearchAppointments(): void
+    {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+            exit;
+        }
+
+        $viewData = SuperAdminPageController::boot('Ajax Appointments', 'Ajax Appointments');
+        $controller = new self($viewData['conn']);
+
+        $filters = [
+            'search' => trim($_GET['search'] ?? ''),
+            'status' => trim($_GET['status'] ?? ''),
+            'appointment_type' => trim($_GET['appointment_type'] ?? ''),
+            'course' => trim($_GET['course'] ?? ''),
+            'year_level' => trim($_GET['year_level'] ?? ''),
+            'date' => trim($_GET['date'] ?? ''),
+            'category' => trim($_GET['category'] ?? ''),
+        ];
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $pageSize = (int) ($_GET['pageSize'] ?? 12);
+
+        $totalAppointments = $controller->model->countAppointments($filters);
+        $appointments = $controller->model->getAppointments($filters, $page, $pageSize);
+
+        echo json_encode([
+            'items' => $appointments,
+            'total' => $totalAppointments,
+            'pagination' => [
+                'currentPage' => $page,
+                'pageSize' => $pageSize,
+                'totalItems' => $totalAppointments,
+                'totalPages' => max(1, (int) ceil($totalAppointments / $pageSize)),
+            ],
+        ]);
+        exit;
+    }
+
+    public static function ajaxSearchRequests(): void
+    {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+            exit;
+        }
+
+        $viewData = SuperAdminPageController::boot('Ajax Requests', 'Ajax Requests');
+        $controller = new self($viewData['conn']);
+
+        $filters = [
+            'search' => trim($_GET['search'] ?? ''),
+            'status' => trim($_GET['status'] ?? ''),
+            'service_type' => trim($_GET['service_type'] ?? ''),
+            'category' => trim($_GET['category'] ?? ''),
+            'course' => trim($_GET['course'] ?? ''),
+            'year_level' => trim($_GET['year_level'] ?? ''),
+            'date' => trim($_GET['date'] ?? ''),
+        ];
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $pageSize = (int) ($_GET['pageSize'] ?? 12);
+
+        $totalRequests = $controller->model->countRequests($filters);
+        $requests = $controller->model->getRequests($filters, $page, $pageSize);
+
+        echo json_encode([
+            'items' => $requests,
+            'total' => $totalRequests,
+            'pagination' => [
+                'currentPage' => $page,
+                'pageSize' => $pageSize,
+                'totalItems' => $totalRequests,
+                'totalPages' => max(1, (int) ceil($totalRequests / $pageSize)),
+            ],
+        ]);
+        exit;
     }
 
     private static function redirectToDashboard(): void

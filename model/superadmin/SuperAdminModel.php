@@ -53,21 +53,263 @@ class SuperAdminModel
         return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     }
 
-    public function getAdmins(): array
+    public function getAdmins(array $filters = []): array
     {
-        $stmt = $this->conn->prepare("
-            SELECT id, student_id, name, course, email, role, created_at
-            FROM students
-            WHERE role = ?
-            ORDER BY id DESC
-        ");
-        $role = UserRoleModel::ROLE_ADMIN;
-        $stmt->bind_param('s', $role);
+        $query = "SELECT id, student_id, name, course, email, role, created_at FROM students WHERE role = ?";
+        $types = 's';
+        $params = [UserRoleModel::ROLE_ADMIN];
+        $search = strtolower(trim($filters['search'] ?? ''));
+
+        if ($search !== '') {
+            $query .= " AND (LOWER(name) LIKE ? OR LOWER(email) LIKE ? OR LOWER(student_id) LIKE ?)";
+            $types .= 'sss';
+            $searchValue = "%{$search}%";
+            $params[] = $searchValue;
+            $params[] = $searchValue;
+            $params[] = $searchValue;
+        }
+
+        $query .= " ORDER BY id DESC";
+        $stmt = $this->conn->prepare($query);
+        $this->bindParams($stmt, $types, $params);
         $stmt->execute();
         $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
 
         return $rows;
+    }
+
+    public function getStudents(array $filters = [], int $page = 1, int $pageSize = 15): array
+    {
+        $offset = max(0, ($page - 1) * $pageSize);
+        $baseSql = "FROM students s WHERE s.role = ?";
+        $types = 's';
+        $params = [UserRoleModel::ROLE_USER];
+        $search = strtolower(trim($filters['search'] ?? ''));
+
+        if ($search !== '') {
+            $baseSql .= " AND (LOWER(s.name) LIKE ? OR LOWER(s.email) LIKE ? OR LOWER(s.student_id) LIKE ? OR LOWER(s.course) LIKE ?)";
+            $types .= 'ssss';
+            $searchValue = "%{$search}%";
+            $params[] = $searchValue;
+            $params[] = $searchValue;
+            $params[] = $searchValue;
+            $params[] = $searchValue;
+        }
+
+        if (!empty($filters['course'])) {
+            $baseSql .= " AND s.course = ?";
+            $types .= 's';
+            $params[] = $filters['course'];
+        }
+
+        if (!empty($filters['year_level'])) {
+            $baseSql .= " AND LEFT(s.student_id, 4) = ? AND s.student_id REGEXP '^[0-9]{4}-[0-9]{5}$'";
+            $types .= 's';
+            $params[] = $filters['year_level'];
+        }
+
+        if (!empty($filters['status'])) {
+            if ($filters['status'] === 'missing_id') {
+                $baseSql .= " AND s.student_id = ''";
+            } else {
+                $baseSql .= " AND s.student_id != ''";
+            }
+        }
+
+        if (!empty($filters['request_status'])) {
+            $baseSql .= " AND EXISTS (SELECT 1 FROM requests r WHERE r.user_id = s.id AND r.status = ?)";
+            $types .= 's';
+            $params[] = $filters['request_status'];
+        }
+
+        $sql = "SELECT s.id, s.student_id, s.name, s.course, s.email, s.created_at {$baseSql} ORDER BY s.created_at DESC LIMIT ? OFFSET ?";
+        $types .= 'ii';
+        $params[] = $pageSize;
+        $params[] = $offset;
+
+        $stmt = $this->conn->prepare($sql);
+        $this->bindParams($stmt, $types, $params);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        return $rows;
+    }
+
+    public function countStudents(array $filters = []): int
+    {
+        $baseSql = "FROM students s WHERE s.role = ?";
+        $types = 's';
+        $params = [UserRoleModel::ROLE_USER];
+        $search = strtolower(trim($filters['search'] ?? ''));
+
+        if ($search !== '') {
+            $baseSql .= " AND (LOWER(s.name) LIKE ? OR LOWER(s.email) LIKE ? OR LOWER(s.student_id) LIKE ? OR LOWER(s.course) LIKE ?)";
+            $types .= 'ssss';
+            $searchValue = "%{$search}%";
+            $params[] = $searchValue;
+            $params[] = $searchValue;
+            $params[] = $searchValue;
+            $params[] = $searchValue;
+        }
+
+        if (!empty($filters['course'])) {
+            $baseSql .= " AND s.course = ?";
+            $types .= 's';
+            $params[] = $filters['course'];
+        }
+
+        if (!empty($filters['year_level'])) {
+            $baseSql .= " AND LEFT(s.student_id, 4) = ? AND s.student_id REGEXP '^[0-9]{4}-[0-9]{5}$'";
+            $types .= 's';
+            $params[] = $filters['year_level'];
+        }
+
+        if (!empty($filters['status'])) {
+            if ($filters['status'] === 'missing_id') {
+                $baseSql .= " AND s.student_id = ''";
+            } else {
+                $baseSql .= " AND s.student_id != ''";
+            }
+        }
+
+        if (!empty($filters['request_status'])) {
+            $baseSql .= " AND EXISTS (SELECT 1 FROM requests r WHERE r.user_id = s.id AND r.status = ?)";
+            $types .= 's';
+            $params[] = $filters['request_status'];
+        }
+
+        $sql = "SELECT COUNT(*) AS total {$baseSql}";
+        $stmt = $this->conn->prepare($sql);
+        $this->bindParams($stmt, $types, $params);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $count = $result ? (int) ($result->fetch_assoc()['total'] ?? 0) : 0;
+        $stmt->close();
+
+        return $count;
+    }
+
+    public function getStudentCourses(): array
+    {
+        $stmt = $this->conn->prepare("SELECT DISTINCT course FROM students WHERE role = ? AND course != '' ORDER BY course ASC");
+        $role = UserRoleModel::ROLE_USER;
+        $stmt->bind_param('s', $role);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        return array_map(fn($row) => $row['course'], $rows);
+    }
+
+    public function getStudentYearLevels(): array
+    {
+        $stmt = $this->conn->prepare("SELECT DISTINCT LEFT(student_id, 4) AS year_level FROM students WHERE role = ? AND student_id REGEXP '^[0-9]{4}-[0-9]{5}$' ORDER BY year_level DESC");
+        $role = UserRoleModel::ROLE_USER;
+        $stmt->bind_param('s', $role);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        return array_values(array_map(fn($row) => $row['year_level'], $rows));
+    }
+
+    public function getStudentStatuses(): array
+    {
+        return [
+            'has_id' => 'Has student ID',
+            'missing_id' => 'Missing student ID',
+        ];
+    }
+
+    public function updateStudent(int $studentId, array $input, int $actorId): array
+    {
+        if (!$this->isStudent($studentId)) {
+            return ['success' => false, 'errors' => ['Student account was not found.']];
+        }
+
+        $name = trim($input['name'] ?? '');
+        $email = trim($input['email'] ?? '');
+        $studentCode = trim($input['student_id'] ?? '');
+        $course = trim($input['course'] ?? '');
+        $password = $input['password'] ?? '';
+        $errors = [];
+
+        if ($name === '') {
+            $errors[] = 'Full name is required.';
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = 'A valid email is required.';
+        }
+
+        if ($studentCode === '') {
+            $errors[] = 'Student ID is required.';
+        } elseif (!preg_match('/^[0-9]{4}-[0-9]{5}$/', $studentCode)) {
+            $errors[] = 'Student ID must follow 2021-12345 format.';
+        }
+
+        if ($course === '') {
+            $errors[] = 'Course is required.';
+        }
+
+        if ($password !== '' && strlen($password) < 6) {
+            $errors[] = 'Password must be at least 6 characters.';
+        }
+
+        if ($this->emailOrStudentIdExists($email, $studentCode, $studentId)) {
+            $errors[] = 'Email or Student ID already exists.';
+        }
+
+        if (!empty($errors)) {
+            return ['success' => false, 'errors' => $errors];
+        }
+
+        if ($password !== '') {
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $stmt = $this->conn->prepare("UPDATE students SET student_id = ?, name = ?, course = ?, email = ?, password = ? WHERE id = ? AND role = 'student'");
+            $stmt->bind_param('sssssi', $studentCode, $name, $course, $email, $hashedPassword, $studentId);
+        } else {
+            $stmt = $this->conn->prepare("UPDATE students SET student_id = ?, name = ?, course = ?, email = ? WHERE id = ? AND role = 'student'");
+            $stmt->bind_param('ssssi', $studentCode, $name, $course, $email, $studentId);
+        }
+
+        $success = $stmt->execute();
+        $stmt->close();
+
+        if ($success) {
+            $this->logAction($actorId, 'update_student', 'students', $studentId, "Updated student {$email}");
+        }
+
+        return ['success' => $success, 'errors' => $success ? [] : ['Unable to update student account.']];
+    }
+
+    private function isStudent(int $id): bool
+    {
+        $stmt = $this->conn->prepare("SELECT id FROM students WHERE id = ? AND role = 'student'");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $exists = $stmt->get_result()->num_rows > 0;
+        $stmt->close();
+
+        return $exists;
+    }
+
+    private function bindParams(mysqli_stmt $stmt, string $types, array $params): bool
+    {
+        if ($types === '' || empty($params)) {
+            return true;
+        }
+
+        $bindNames = [];
+        $bindNames[] = $types;
+
+        foreach ($params as $key => $value) {
+            $bindNames[] = &$params[$key];
+        }
+
+        return call_user_func_array([$stmt, 'bind_param'], $bindNames);
     }
 
     public function createAdmin(array $input, int $actorId): array
@@ -453,6 +695,329 @@ class SuperAdminModel
         $stmt->bind_param('issis', $actorId, $action, $targetType, $targetId, $details);
         $stmt->execute();
         $stmt->close();
+    }
+
+    /**
+     * Get appointments with filtering and pagination
+     */
+    public function getAppointments(array $filters = [], int $page = 1, int $pageSize = 15): array
+    {
+        $offset = max(0, ($page - 1) * $pageSize);
+        $sql = "SELECT a.id, a.user_id, a.appointment_type, a.appointment_date, a.appointment_time, 
+                       a.service_type, a.purpose, a.status, a.category, a.admin_notes,
+                       s.name, s.student_id, s.course, s.email
+                FROM appointments a
+                JOIN students s ON a.user_id = s.id
+                WHERE 1=1";
+        
+        $types = '';
+        $params = [];
+        $search = strtolower(trim($filters['search'] ?? ''));
+
+        if ($search !== '') {
+            $sql .= " AND (LOWER(s.name) LIKE ? OR LOWER(s.student_id) LIKE ? OR LOWER(s.email) LIKE ? OR LOWER(a.purpose) LIKE ?)";
+            $types .= 'ssss';
+            $searchValue = "%{$search}%";
+            $params[] = $searchValue;
+            $params[] = $searchValue;
+            $params[] = $searchValue;
+            $params[] = $searchValue;
+        }
+
+        if (!empty($filters['status'])) {
+            $sql .= " AND a.status = ?";
+            $types .= 's';
+            $params[] = $filters['status'];
+        }
+
+        if (!empty($filters['appointment_type'])) {
+            $sql .= " AND a.appointment_type = ?";
+            $types .= 's';
+            $params[] = $filters['appointment_type'];
+        }
+
+        if (!empty($filters['course'])) {
+            $sql .= " AND s.course = ?";
+            $types .= 's';
+            $params[] = $filters['course'];
+        }
+
+        if (!empty($filters['year_level'])) {
+            $sql .= " AND LEFT(s.student_id, 4) = ?";
+            $types .= 's';
+            $params[] = $filters['year_level'];
+        }
+
+        if (!empty($filters['date'])) {
+            $sql .= " AND DATE(a.appointment_date) = ?";
+            $types .= 's';
+            $params[] = $filters['date'];
+        }
+
+        if (!empty($filters['category'])) {
+            $sql .= " AND a.category = ?";
+            $types .= 's';
+            $params[] = $filters['category'];
+        }
+
+        $sql .= " ORDER BY a.appointment_date DESC, a.appointment_time DESC LIMIT ? OFFSET ?";
+        $types .= 'ii';
+        $params[] = $pageSize;
+        $params[] = $offset;
+
+        $stmt = $this->conn->prepare($sql);
+        if ($types) {
+            $this->bindParams($stmt, $types, $params);
+        }
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        return $rows;
+    }
+
+    /**
+     * Count appointments with filtering
+     */
+    public function countAppointments(array $filters = []): int
+    {
+        $sql = "SELECT COUNT(*) AS total FROM appointments a JOIN students s ON a.user_id = s.id WHERE 1=1";
+        
+        $types = '';
+        $params = [];
+        $search = strtolower(trim($filters['search'] ?? ''));
+
+        if ($search !== '') {
+            $sql .= " AND (LOWER(s.name) LIKE ? OR LOWER(s.student_id) LIKE ? OR LOWER(s.email) LIKE ? OR LOWER(a.purpose) LIKE ?)";
+            $types .= 'ssss';
+            $searchValue = "%{$search}%";
+            $params[] = $searchValue;
+            $params[] = $searchValue;
+            $params[] = $searchValue;
+            $params[] = $searchValue;
+        }
+
+        if (!empty($filters['status'])) {
+            $sql .= " AND a.status = ?";
+            $types .= 's';
+            $params[] = $filters['status'];
+        }
+
+        if (!empty($filters['appointment_type'])) {
+            $sql .= " AND a.appointment_type = ?";
+            $types .= 's';
+            $params[] = $filters['appointment_type'];
+        }
+
+        if (!empty($filters['course'])) {
+            $sql .= " AND s.course = ?";
+            $types .= 's';
+            $params[] = $filters['course'];
+        }
+
+        if (!empty($filters['year_level'])) {
+            $sql .= " AND LEFT(s.student_id, 4) = ?";
+            $types .= 's';
+            $params[] = $filters['year_level'];
+        }
+
+        if (!empty($filters['date'])) {
+            $sql .= " AND DATE(a.appointment_date) = ?";
+            $types .= 's';
+            $params[] = $filters['date'];
+        }
+
+        if (!empty($filters['category'])) {
+            $sql .= " AND a.category = ?";
+            $types .= 's';
+            $params[] = $filters['category'];
+        }
+
+        $stmt = $this->conn->prepare($sql);
+        if ($types) {
+            $this->bindParams($stmt, $types, $params);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $count = $result ? (int) ($result->fetch_assoc()['total'] ?? 0) : 0;
+        $stmt->close();
+
+        return $count;
+    }
+
+    /**
+     * Get requests with filtering and pagination
+     */
+    public function getRequests(array $filters = [], int $page = 1, int $pageSize = 15): array
+    {
+        $offset = max(0, ($page - 1) * $pageSize);
+        $sql = "SELECT r.id, r.user_id, r.service_type, r.category, r.notes, r.year_level, 
+                       r.status, r.created_at,
+                       s.name, s.student_id, s.course, s.email
+                FROM requests r
+                JOIN students s ON r.user_id = s.id
+                WHERE 1=1";
+        
+        $types = '';
+        $params = [];
+        $search = strtolower(trim($filters['search'] ?? ''));
+
+        if ($search !== '') {
+            $sql .= " AND (LOWER(s.name) LIKE ? OR LOWER(s.student_id) LIKE ? OR LOWER(s.email) LIKE ? OR LOWER(r.notes) LIKE ?)";
+            $types .= 'ssss';
+            $searchValue = "%{$search}%";
+            $params[] = $searchValue;
+            $params[] = $searchValue;
+            $params[] = $searchValue;
+            $params[] = $searchValue;
+        }
+
+        if (!empty($filters['status'])) {
+            $sql .= " AND r.status = ?";
+            $types .= 's';
+            $params[] = $filters['status'];
+        }
+
+        if (!empty($filters['service_type'])) {
+            $sql .= " AND r.service_type = ?";
+            $types .= 's';
+            $params[] = $filters['service_type'];
+        }
+
+        if (!empty($filters['category'])) {
+            $sql .= " AND r.category = ?";
+            $types .= 's';
+            $params[] = $filters['category'];
+        }
+
+        if (!empty($filters['course'])) {
+            $sql .= " AND s.course = ?";
+            $types .= 's';
+            $params[] = $filters['course'];
+        }
+
+        if (!empty($filters['year_level'])) {
+            $sql .= " AND r.year_level = ?";
+            $types .= 's';
+            $params[] = $filters['year_level'];
+        }
+
+        if (!empty($filters['date'])) {
+            $sql .= " AND DATE(r.created_at) = ?";
+            $types .= 's';
+            $params[] = $filters['date'];
+        }
+
+        $sql .= " ORDER BY r.created_at DESC LIMIT ? OFFSET ?";
+        $types .= 'ii';
+        $params[] = $pageSize;
+        $params[] = $offset;
+
+        $stmt = $this->conn->prepare($sql);
+        if ($types) {
+            $this->bindParams($stmt, $types, $params);
+        }
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        return $rows;
+    }
+
+    /**
+     * Count requests with filtering
+     */
+    public function countRequests(array $filters = []): int
+    {
+        $sql = "SELECT COUNT(*) AS total FROM requests r JOIN students s ON r.user_id = s.id WHERE 1=1";
+        
+        $types = '';
+        $params = [];
+        $search = strtolower(trim($filters['search'] ?? ''));
+
+        if ($search !== '') {
+            $sql .= " AND (LOWER(s.name) LIKE ? OR LOWER(s.student_id) LIKE ? OR LOWER(s.email) LIKE ? OR LOWER(r.notes) LIKE ?)";
+            $types .= 'ssss';
+            $searchValue = "%{$search}%";
+            $params[] = $searchValue;
+            $params[] = $searchValue;
+            $params[] = $searchValue;
+            $params[] = $searchValue;
+        }
+
+        if (!empty($filters['status'])) {
+            $sql .= " AND r.status = ?";
+            $types .= 's';
+            $params[] = $filters['status'];
+        }
+
+        if (!empty($filters['service_type'])) {
+            $sql .= " AND r.service_type = ?";
+            $types .= 's';
+            $params[] = $filters['service_type'];
+        }
+
+        if (!empty($filters['category'])) {
+            $sql .= " AND r.category = ?";
+            $types .= 's';
+            $params[] = $filters['category'];
+        }
+
+        if (!empty($filters['course'])) {
+            $sql .= " AND s.course = ?";
+            $types .= 's';
+            $params[] = $filters['course'];
+        }
+
+        if (!empty($filters['year_level'])) {
+            $sql .= " AND r.year_level = ?";
+            $types .= 's';
+            $params[] = $filters['year_level'];
+        }
+
+        if (!empty($filters['date'])) {
+            $sql .= " AND DATE(r.created_at) = ?";
+            $types .= 's';
+            $params[] = $filters['date'];
+        }
+
+        $stmt = $this->conn->prepare($sql);
+        if ($types) {
+            $this->bindParams($stmt, $types, $params);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $count = $result ? (int) ($result->fetch_assoc()['total'] ?? 0) : 0;
+        $stmt->close();
+
+        return $count;
+    }
+
+    /**
+     * Get distinct appointment types
+     */
+    public function getAppointmentTypes(): array
+    {
+        $stmt = $this->conn->prepare("SELECT DISTINCT appointment_type FROM appointments WHERE appointment_type != '' ORDER BY appointment_type ASC");
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        return array_map(fn($row) => $row['appointment_type'], $rows);
+    }
+
+    /**
+     * Get request categories
+     */
+    public function getRequestCategories(): array
+    {
+        return [
+            'Document Request',
+            'Consultation',
+            'Enrollment Concern',
+            'Grade Concern',
+            'Other'
+        ];
     }
 
     private function ensureActionLogsTable(): void

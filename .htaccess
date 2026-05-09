@@ -3,4 +3,12 @@ RewriteEngine On
 RewriteRule ^superadmin/dashboard/?$ public/superadmin/Dashboard.php [L,QSA]
 RewriteRule ^superadmin/store-user/?$ public/superadmin/StoreUser.php [L,QSA]
 RewriteRule ^superadmin/users/?$ public/superadmin/Users.php [L,QSA]
+RewriteRule ^superadmin/admins/?$ public/superadmin/Admins.php [L,QSA]
 RewriteRule ^superadmin/requests/?$ public/superadmin/Requests.php [L,QSA]
+RewriteRule ^superadmin/ajax-search-students/?$ public/superadmin/AjaxSearchStudents.php [L,QSA]
+RewriteRule ^superadmin/ajax-search-appointments/?$ public/superadmin/AjaxSearchAppointments.php [L,QSA]
+RewriteRule ^superadmin/ajax-search-requests/?$ public/superadmin/AjaxSearchRequests.php [L,QSA]
+RewriteRule ^superadmin/ajax-create-admin/?$ public/superadmin/AjaxCreateAdmin.php [L,QSA]
+
+RewriteRule ^admin/ajax-search-requests/?$ public/admin/AjaxSearchRequests.php [L,QSA]
+RewriteRule ^admin/ajax-search-appointments/?$ public/admin/AjaxSearchAppointments.php [L,QSA]

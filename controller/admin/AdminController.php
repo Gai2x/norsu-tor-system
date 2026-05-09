@@ -92,4 +92,92 @@ class AdminController {
 
         return $data;
     }
+
+    /**
+     * AJAX: Search requests with filters
+     */
+    public static function ajaxSearchRequests($conn)
+    {
+        header('Content-Type: application/json');
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+            exit;
+        }
+
+        require_once __DIR__ . '/../../model/admin/AdminModel.php';
+        $model = new AdminModel($conn);
+
+        $filters = [
+            'search' => trim($_GET['search'] ?? ''),
+            'status' => trim($_GET['status'] ?? ''),
+            'service_type' => trim($_GET['service_type'] ?? ''),
+            'category' => trim($_GET['category'] ?? ''),
+            'course' => trim($_GET['course'] ?? ''),
+            'year_level' => trim($_GET['year_level'] ?? ''),
+            'date' => trim($_GET['date'] ?? ''),
+        ];
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $pageSize = (int) ($_GET['pageSize'] ?? 12);
+
+        $totalRequests = $model->countRequests($filters);
+        $requests = $model->getRequests($filters, $page, $pageSize);
+
+        echo json_encode([
+            'items' => $requests,
+            'total' => $totalRequests,
+            'pagination' => [
+                'currentPage' => $page,
+                'pageSize' => $pageSize,
+                'totalItems' => $totalRequests,
+                'totalPages' => max(1, (int) ceil($totalRequests / $pageSize)),
+            ],
+        ]);
+        exit;
+    }
+
+    /**
+     * AJAX: Search appointments with filters
+     */
+    public static function ajaxSearchAppointments($conn)
+    {
+        header('Content-Type: application/json');
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+            exit;
+        }
+
+        require_once __DIR__ . '/../../model/admin/AdminModel.php';
+        $model = new AdminModel($conn);
+
+        $filters = [
+            'search' => trim($_GET['search'] ?? ''),
+            'status' => trim($_GET['status'] ?? ''),
+            'appointment_type' => trim($_GET['appointment_type'] ?? ''),
+            'course' => trim($_GET['course'] ?? ''),
+            'year_level' => trim($_GET['year_level'] ?? ''),
+            'date' => trim($_GET['date'] ?? ''),
+            'category' => trim($_GET['category'] ?? ''),
+        ];
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $pageSize = (int) ($_GET['pageSize'] ?? 12);
+
+        $totalAppointments = $model->countAppointments($filters);
+        $appointments = $model->getAppointments($filters, $page, $pageSize);
+
+        echo json_encode([
+            'items' => $appointments,
+            'total' => $totalAppointments,
+            'pagination' => [
+                'currentPage' => $page,
+                'pageSize' => $pageSize,
+                'totalItems' => $totalAppointments,
+                'totalPages' => max(1, (int) ceil($totalAppointments / $pageSize)),
+            ],
+        ]);
+        exit;
+    }
 }
