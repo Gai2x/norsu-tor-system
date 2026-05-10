@@ -83,7 +83,38 @@
             <p class="text-sm text-slate-500 mt-1">Student directory with filtering and real-time search.</p>
         </div>
         <div id="students-container" class="grid gap-5 p-6 md:grid-cols-2 xl:grid-cols-3">
-            <!-- Students will be loaded here via AJAX -->
+            <?php if (!empty($students)): ?>
+                <?php foreach ($students as $student): ?>
+                    <article class="group rounded-[2rem] border border-slate-200 bg-slate-50 p-6 shadow-sm transition hover:-translate-y-1 hover:border-slate-300 hover:bg-white">
+                        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Unique ID</p>
+                                <p class="text-xl font-semibold text-slate-900 mt-2"><?php echo str_pad($student['id'], 8, '0', STR_PAD_LEFT); ?></p>
+                                <p class="text-sm text-slate-500 mt-2">ID: <?php echo htmlspecialchars($student['student_id'] ?: 'N/A'); ?></p>
+                            </div>
+                            <button type="button" class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700" data-student-edit="<?php echo (int) $student['id']; ?>" data-student-id="<?php echo (int) $student['id']; ?>" data-student-name="<?php echo htmlspecialchars($student['name']); ?>" data-student-email="<?php echo htmlspecialchars($student['email']); ?>" data-student-student-id="<?php echo htmlspecialchars($student['student_id']); ?>" data-student-course="<?php echo htmlspecialchars($student['course']); ?>">
+                                <i class="fas fa-pen-to-square mr-2"></i>Edit
+                            </button>
+                        </div>
+                        <div class="mt-6 space-y-4 text-sm text-slate-600">
+                            <div class="grid gap-2">
+                                <span class="text-xs uppercase tracking-[0.25em] text-slate-400">Name</span>
+                                <p class="font-medium text-slate-900"><?php echo htmlspecialchars($student['name']); ?></p>
+                            </div>
+                            <div class="grid gap-2">
+                                <span class="text-xs uppercase tracking-[0.25em] text-slate-400">Email</span>
+                                <p><?php echo htmlspecialchars($student['email']); ?></p>
+                            </div>
+                            <div class="grid gap-2">
+                                <span class="text-xs uppercase tracking-[0.25em] text-slate-400">Course</span>
+                                <p><?php echo htmlspecialchars($student['course'] ?: 'N/A'); ?></p>
+                            </div>
+                        </div>
+                    </article>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-slate-500">No students found.</div>
+            <?php endif; ?>
         </div>
     </section>
 </div>
@@ -91,6 +122,12 @@
 <script src="/Norsu_Tor/public/js/search-filter-manager.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const escapeHtml = function(value) {
+        const div = document.createElement('div');
+        div.textContent = value == null ? '' : String(value);
+        return div.innerHTML;
+    };
+
     const studentSearch = new SearchFilterManager({
         endpoint: '/Norsu_Tor/superadmin/ajax-search-students',
         container: document.getElementById('students-container'),
@@ -102,30 +139,36 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         pageSize: 12,
         itemTemplate: function(student) {
+            const id = escapeHtml(student.id);
+            const studentId = escapeHtml(student.student_id || 'N/A');
+            const name = escapeHtml(student.name || 'N/A');
+            const email = escapeHtml(student.email || 'N/A');
+            const course = escapeHtml(student.course || 'N/A');
+
             return `
                 <article class="group rounded-[2rem] border border-slate-200 bg-slate-50 p-6 shadow-sm transition hover:-translate-y-1 hover:border-slate-300 hover:bg-white">
                     <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Unique ID</p>
-                            <p class="text-xl font-semibold text-slate-900 mt-2">#${student.id}</p>
-                            <p class="text-sm text-slate-500 mt-2">ID: ${student.student_id || 'N/A'}</p>
+                            <p class="text-xl font-semibold text-slate-900 mt-2">#${id}</p>
+                            <p class="text-sm text-slate-500 mt-2">ID: ${studentId}</p>
                         </div>
-                        <button type="button" class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700" data-student-edit="${student.id}" data-student-id="${student.id}" data-student-name="${student.name}" data-student-email="${student.email}" data-student-student-id="${student.student_id}" data-student-course="${student.course}">
+                        <button type="button" class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700" data-student-edit="${id}" data-student-id="${id}" data-student-name="${name}" data-student-email="${email}" data-student-student-id="${studentId}" data-student-course="${course}">
                             <i class="fas fa-pen-to-square mr-2"></i>Edit
                         </button>
                     </div>
                     <div class="mt-6 space-y-4 text-sm text-slate-600">
                         <div class="grid gap-2">
                             <span class="text-xs uppercase tracking-[0.25em] text-slate-400">Name</span>
-                            <p class="font-medium text-slate-900">${student.name}</p>
+                            <p class="font-medium text-slate-900">${name}</p>
                         </div>
                         <div class="grid gap-2">
                             <span class="text-xs uppercase tracking-[0.25em] text-slate-400">Email</span>
-                            <p>${student.email}</p>
+                            <p>${email}</p>
                         </div>
                         <div class="grid gap-2">
                             <span class="text-xs uppercase tracking-[0.25em] text-slate-400">Course</span>
-                            <p>${student.course || 'N/A'}</p>
+                            <p>${course}</p>
                         </div>
                     </div>
                 </article>

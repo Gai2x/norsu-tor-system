@@ -94,6 +94,47 @@ class AdminController {
     }
 
     /**
+     * AJAX: Search students with filters
+     */
+    public static function ajaxSearchStudents($conn)
+    {
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+            exit;
+        }
+
+        require_once __DIR__ . '/../../model/admin/AdminModel.php';
+        $model = new AdminModel($conn);
+
+        $filters = [
+            'search' => trim($_GET['search'] ?? ''),
+            'course' => trim($_GET['course'] ?? ''),
+            'year_level' => trim($_GET['year_level'] ?? ''),
+            'status' => trim($_GET['status'] ?? ''),
+        ];
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $pageSize = (int) ($_GET['pageSize'] ?? 12);
+
+        $totalStudents = $model->countStudents($filters);
+        $students = $model->getStudents($filters, $page, $pageSize);
+
+        echo json_encode([
+            'items' => $students,
+            'total' => $totalStudents,
+            'pagination' => [
+                'currentPage' => $page,
+                'pageSize' => $pageSize,
+                'totalItems' => $totalStudents,
+                'totalPages' => max(1, (int) ceil($totalStudents / $pageSize)),
+            ],
+        ]);
+        exit;
+    }
+
+    /**
      * AJAX: Search requests with filters
      */
     public static function ajaxSearchRequests($conn)
@@ -113,7 +154,6 @@ class AdminController {
             'search' => trim($_GET['search'] ?? ''),
             'status' => trim($_GET['status'] ?? ''),
             'service_type' => trim($_GET['service_type'] ?? ''),
-            'category' => trim($_GET['category'] ?? ''),
             'course' => trim($_GET['course'] ?? ''),
             'year_level' => trim($_GET['year_level'] ?? ''),
             'date' => trim($_GET['date'] ?? ''),
@@ -160,7 +200,6 @@ class AdminController {
             'course' => trim($_GET['course'] ?? ''),
             'year_level' => trim($_GET['year_level'] ?? ''),
             'date' => trim($_GET['date'] ?? ''),
-            'category' => trim($_GET['category'] ?? ''),
         ];
         $page = max(1, (int) ($_GET['page'] ?? 1));
         $pageSize = (int) ($_GET['pageSize'] ?? 12);

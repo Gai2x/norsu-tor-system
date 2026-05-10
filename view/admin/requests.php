@@ -112,7 +112,7 @@
                 <?php if (!empty($allRequests)): ?>
                     <?php foreach ($allRequests as $row): ?>
                     <tr class="border-t hover:bg-gray-50">
-                        <td class="px-6 lg:px-8 py-5 font-semibold sticky left-0 bg-white">#REQ-<?php echo $row['id']; ?></td>
+                        <td class="px-6 lg:px-8 py-5 font-semibold sticky left-0 bg-white">REQ-<?php echo str_pad($row['id'], 5, '0', STR_PAD_LEFT); ?></td>
                         <td class="px-6 lg:px-8 py-5">
                             <?php if (($row['type'] ?? 'regular') === 'one_time'): ?>
                                 <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-semibold">One-Time Request</span>
@@ -153,7 +153,7 @@
                     <?php endforeach; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="8" class="text-center py-10 text-gray-500">No requests found.</td>
+                        <td colspan="9" class="text-center py-10 text-gray-500">No requests found.</td>
                     </tr>
                 <?php endif; ?>
                 </tbody>

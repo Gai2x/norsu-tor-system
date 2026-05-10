@@ -77,7 +77,7 @@
                             <?php $status = strtolower($request['status'] ?? 'pending'); ?>
                             <?php $detailsId = 'request-details-' . htmlspecialchars($request['type']) . '-' . (int) $request['id']; ?>
                             <tr class="border-t hover:bg-gray-50">
-                                <td class="px-6 py-5 font-semibold">#REQ-<?php echo (int) $request['id']; ?></td>
+                                <td class="px-6 py-5 font-semibold">REQ-<?php echo str_pad($request['id'], 5, '0', STR_PAD_LEFT); ?></td>
                                 <td class="px-6 py-5">
                                     <span class="<?php echo $request['type'] === 'one_time' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'; ?> rounded-full px-3 py-1 text-xs font-semibold">
                                         <?php echo $request['type'] === 'one_time' ? 'One-Time' : 'Regular'; ?>
@@ -100,7 +100,7 @@
                                 </td>
                             </tr>
                             <tr id="<?php echo $detailsId; ?>" class="hidden bg-gray-50 border-t">
-                                <td colspan="9" class="px-6 py-5">
+                                <td colspan="10" class="px-6 py-5">
                                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                                         <div class="rounded-2xl bg-white border border-gray-100 p-4">
                                             <p class="text-xs text-gray-400 uppercase font-semibold">Student Info</p>
@@ -136,7 +136,7 @@
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <tr><td colspan="9" class="py-10 text-center text-gray-500">No requests found.</td></tr>
+                        <tr><td colspan="10" class="py-10 text-center text-gray-500">No requests found.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>

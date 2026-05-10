@@ -32,7 +32,6 @@ class AppointmentController {
     }
 
     public function bookAppointment($user_id, $data) {
-
         if (empty($data['appointment_date']) || empty($data['appointment_time']) || 
             empty($data['service_type']) || empty($data['purpose'])) {
             return ['success' => false, 'message' => 'Please fill in all required fields.'];

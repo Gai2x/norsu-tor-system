@@ -88,8 +88,11 @@ class SearchFilterManager {
 
             const data = await response.json();
 
-            this.totalItems = data.total || 0;
-            this.renderResults(data.items || []);
+            const items = data.items || data.students || [];
+            const total = data.total ?? data.pagination?.totalItems ?? items.length;
+
+            this.totalItems = total;
+            this.renderResults(items);
 
             if (this.onResults && typeof this.onResults === 'function') {
                 this.onResults(data);

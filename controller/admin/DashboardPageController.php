@@ -122,6 +122,34 @@ class DashboardPageController{
             ORDER BY created_at DESC, id DESC
         ");
 
+        $appointments = mysqli_query($conn, "
+            SELECT
+                a.id,
+                a.appointment_date,
+                a.appointment_time,
+                a.status,
+                s.name,
+                s.student_id,
+                a.service_type
+            FROM appointments a
+            LEFT JOIN students s ON a.user_id = s.id
+            ORDER BY a.appointment_date DESC, a.appointment_time DESC
+            LIMIT 3
+        ");
+
+        $students = mysqli_query($conn, "
+            SELECT
+                id,
+                name,
+                student_id,
+                email,
+                course,
+                created_at
+            FROM students
+            ORDER BY created_at DESC
+            LIMIT 3
+        ");
+
         $viewData['stats']['pending_requests'] = (int) $pendingRequests;
 
         return array_merge($viewData, $dashboardData, [
@@ -131,6 +159,8 @@ class DashboardPageController{
             'rejectedRequests' => $rejectedRequests,
             'recentOneTimeRequests' => $recentOneTimeRequests,
             'requests' => $requests,
+            'appointments' => $appointments,
+            'students' => $students,
         ]);
     }
 }

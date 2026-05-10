@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 require_once __DIR__ . '/../UserRoleModel.php';
 
@@ -704,7 +704,7 @@ class SuperAdminModel
     {
         $offset = max(0, ($page - 1) * $pageSize);
         $sql = "SELECT a.id, a.user_id, a.appointment_type, a.appointment_date, a.appointment_time, 
-                       a.service_type, a.purpose, a.status, a.category, a.admin_notes,
+                       a.service_type, a.purpose, a.status, a.admin_notes,
                        s.name, s.student_id, s.course, s.email
                 FROM appointments a
                 JOIN students s ON a.user_id = s.id
@@ -752,12 +752,6 @@ class SuperAdminModel
             $sql .= " AND DATE(a.appointment_date) = ?";
             $types .= 's';
             $params[] = $filters['date'];
-        }
-
-        if (!empty($filters['category'])) {
-            $sql .= " AND a.category = ?";
-            $types .= 's';
-            $params[] = $filters['category'];
         }
 
         $sql .= " ORDER BY a.appointment_date DESC, a.appointment_time DESC LIMIT ? OFFSET ?";
@@ -827,12 +821,6 @@ class SuperAdminModel
             $params[] = $filters['date'];
         }
 
-        if (!empty($filters['category'])) {
-            $sql .= " AND a.category = ?";
-            $types .= 's';
-            $params[] = $filters['category'];
-        }
-
         $stmt = $this->conn->prepare($sql);
         if ($types) {
             $this->bindParams($stmt, $types, $params);
@@ -851,7 +839,7 @@ class SuperAdminModel
     public function getRequests(array $filters = [], int $page = 1, int $pageSize = 15): array
     {
         $offset = max(0, ($page - 1) * $pageSize);
-        $sql = "SELECT r.id, r.user_id, r.service_type, r.category, r.notes, r.year_level, 
+        $sql = "SELECT r.id, r.user_id, r.service_type, r.notes, r.year_level, 
                        r.status, r.created_at,
                        s.name, s.student_id, s.course, s.email
                 FROM requests r
@@ -882,12 +870,6 @@ class SuperAdminModel
             $sql .= " AND r.service_type = ?";
             $types .= 's';
             $params[] = $filters['service_type'];
-        }
-
-        if (!empty($filters['category'])) {
-            $sql .= " AND r.category = ?";
-            $types .= 's';
-            $params[] = $filters['category'];
         }
 
         if (!empty($filters['course'])) {
@@ -955,12 +937,6 @@ class SuperAdminModel
             $sql .= " AND r.service_type = ?";
             $types .= 's';
             $params[] = $filters['service_type'];
-        }
-
-        if (!empty($filters['category'])) {
-            $sql .= " AND r.category = ?";
-            $types .= 's';
-            $params[] = $filters['category'];
         }
 
         if (!empty($filters['course'])) {
@@ -1037,3 +1013,4 @@ class SuperAdminModel
         ");
     }
 }
+

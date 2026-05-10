@@ -28,11 +28,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['book_appointment'])) 
         'appointment_date' => trim($_POST['appointment_date'] ?? ''),
         'appointment_time' => trim($_POST['appointment_time'] ?? ''),
         'service_type' => trim($_POST['service_type'] ?? ''),
-        'advisor_name' => trim($_POST['advisor_name'] ?? ''),
-        'purpose' => trim($_POST['purpose'] ?? '')
     ];
 
-    $result = $appointmentController->bookAppointment($user_id, $data);
+    $result = $appointmentController->bookAppointment($data, $user_id);
+
     $message = $result['message'];
     $messageType = $result['success'] ? 'success' : 'error';
 

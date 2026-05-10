@@ -12,3 +12,4 @@ RewriteRule ^superadmin/ajax-create-admin/?$ public/superadmin/AjaxCreateAdmin.p
 
 RewriteRule ^admin/ajax-search-requests/?$ public/admin/AjaxSearchRequests.php [L,QSA]
 RewriteRule ^admin/ajax-search-appointments/?$ public/admin/AjaxSearchAppointments.php [L,QSA]
+RewriteRule ^admin/ajax-search-students/?$ public/admin/AjaxSearchStudents.php [L,QSA]

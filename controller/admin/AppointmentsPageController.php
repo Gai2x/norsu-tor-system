@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/AdminPageController.php';
 require_once __DIR__ . '/../user/AppointmentController.php';
+require_once __DIR__ . '/../../model/admin/AdminModel.php';
 
 class AppointmentsPageController
 {
@@ -14,6 +15,7 @@ class AppointmentsPageController
 
         $conn = $viewData['conn'];
         $appointmentController = new AppointmentController($conn);
+        $adminModel = new AdminModel($conn);
         $appointments = $appointmentController->getAllAppointments();
 
         $totalAppointments = 0;
@@ -41,6 +43,9 @@ class AppointmentsPageController
             'pendingAppointments' => $pendingAppointments,
             'approvedAppointments' => $approvedAppointments,
             'rejectedAppointments' => $rejectedAppointments,
+            'appointmentTypes' => $adminModel->getAppointmentTypes(),
+            'courses' => $adminModel->getCourses(),
+            'yearLevels' => $adminModel->getYearLevels(),
         ]);
     }
 }

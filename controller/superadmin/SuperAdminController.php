@@ -39,6 +39,8 @@ class SuperAdminController
         $students = $controller->model->getStudents($filters, $page, $pageSize);
 
         echo json_encode([
+            'items' => $students,
+            'total' => $totalStudents,
             'students' => $students,
             'pagination' => [
                 'currentPage' => $page,
@@ -288,7 +290,6 @@ class SuperAdminController
             'course' => trim($_GET['course'] ?? ''),
             'year_level' => trim($_GET['year_level'] ?? ''),
             'date' => trim($_GET['date'] ?? ''),
-            'category' => trim($_GET['category'] ?? ''),
         ];
         $page = max(1, (int) ($_GET['page'] ?? 1));
         $pageSize = (int) ($_GET['pageSize'] ?? 12);
@@ -325,7 +326,6 @@ class SuperAdminController
             'search' => trim($_GET['search'] ?? ''),
             'status' => trim($_GET['status'] ?? ''),
             'service_type' => trim($_GET['service_type'] ?? ''),
-            'category' => trim($_GET['category'] ?? ''),
             'course' => trim($_GET['course'] ?? ''),
             'year_level' => trim($_GET['year_level'] ?? ''),
             'date' => trim($_GET['date'] ?? ''),

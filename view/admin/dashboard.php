@@ -36,10 +36,10 @@
                     </tr>
                 </thead>
                 <tbody>
-                <?php if (isset($requests) && mysqli_num_rows($requests) > 0): ?>
-                    <?php while ($row = mysqli_fetch_assoc($requests)): ?>
+                <?php $requestCount = 0; if (isset($requests) && mysqli_num_rows($requests) > 0): ?>
+                    <?php while ($row = mysqli_fetch_assoc($requests) and $requestCount < 3): $requestCount++; ?>
                     <tr class="border-t hover:bg-gray-50">
-                        <td class="px-8 py-5 font-semibold">#REQ-<?php echo $row['id']; ?></td>
+                        <td class="px-8 py-5 font-semibold">REQ-<?php echo str_pad($row['id'], 5, '0', STR_PAD_LEFT); ?></td>
                         <td class="px-8 py-5"><?php echo htmlspecialchars($row['name']); ?></td>
                         <td class="px-8 py-5"><?php echo htmlspecialchars($row['student_id']); ?></td>
                         <td class="px-8 py-5"><?php echo htmlspecialchars($row['service_type']); ?></td>
@@ -67,6 +67,97 @@
                 <?php endif; ?>
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-3xl shadow overflow-hidden">
+            <div class="px-4 sm:px-6 lg:px-10 py-5 sm:py-6 border-b flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                <div>
+                    <h3 class="text-2xl sm:text-3xl font-bold text-gray-800">Recent Appointments</h3>
+                    <p class="mt-1 text-sm text-gray-500">Latest 3 scheduled appointments.</p>
+                </div>
+                <a href="Appointments.php" class="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white no-underline transition hover:bg-blue-800">
+                    View All
+                </a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[600px] text-left text-sm">
+                    <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                        <tr>
+                            <th class="px-6 py-4">ID</th>
+                            <th class="px-6 py-4">Student</th>
+                            <th class="px-6 py-4">Date</th>
+                            <th class="px-6 py-4">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php if (isset($appointments) && mysqli_num_rows($appointments) > 0): ?>
+                        <?php while ($apt = mysqli_fetch_assoc($appointments)): ?>
+                        <tr class="border-t hover:bg-gray-50">
+                            <td class="px-6 py-4 font-semibold">APT-<?php echo str_pad($apt['id'], 5, '0', STR_PAD_LEFT); ?></td>
+                            <td class="px-6 py-4"><?php echo htmlspecialchars($apt['name']); ?></td>
+                            <td class="px-6 py-4"><?php echo date("M d, Y", strtotime($apt['appointment_date'])); ?></td>
+                            <td class="px-6 py-4">
+                                <?php $status = strtolower($apt['status'] ?? 'pending'); ?>
+                                <?php if ($status === 'pending'): ?>
+                                    <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-semibold">Pending</span>
+                                <?php elseif ($status === 'approved'): ?>
+                                    <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-semibold">Approved</span>
+                                <?php else: ?>
+                                    <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-semibold">Rejected</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="4" class="text-center py-6 text-gray-500">No appointments found.</td>
+                        </tr>
+                    <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-3xl shadow overflow-hidden">
+            <div class="px-4 sm:px-6 lg:px-10 py-5 sm:py-6 border-b flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                <div>
+                    <h3 class="text-2xl sm:text-3xl font-bold text-gray-800">Recent Students</h3>
+                    <p class="mt-1 text-sm text-gray-500">Latest 3 registered students.</p>
+                </div>
+                <a href="Students.php" class="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white no-underline transition hover:bg-blue-800">
+                    View All
+                </a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[600px] text-left text-sm">
+                    <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                        <tr>
+                            <th class="px-6 py-4">Student ID</th>
+                            <th class="px-6 py-4">Name</th>
+                            <th class="px-6 py-4">Email</th>
+                            <th class="px-6 py-4">Course</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php if (isset($students) && mysqli_num_rows($students) > 0): ?>
+                        <?php while ($stu = mysqli_fetch_assoc($students)): ?>
+                        <tr class="border-t hover:bg-gray-50">
+                            <td class="px-6 py-4 font-semibold"><?php echo htmlspecialchars($stu['student_id']); ?></td>
+                            <td class="px-6 py-4"><?php echo htmlspecialchars($stu['name']); ?></td>
+                            <td class="px-6 py-4 truncate max-w-[150px]"><?php echo htmlspecialchars($stu['email']); ?></td>
+                            <td class="px-6 py-4"><?php echo htmlspecialchars($stu['course'] ?? 'N/A'); ?></td>
+                        </tr>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="4" class="text-center py-6 text-gray-500">No students found.</td>
+                        </tr>
+                    <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
