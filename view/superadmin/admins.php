@@ -40,9 +40,8 @@
                     <article class="group rounded-[2rem] border border-slate-200 bg-slate-50 p-6 shadow-sm transition hover:-translate-y-1 hover:border-slate-300 hover:bg-white">
                         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                             <div>
-                                <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Unique ID</p>
-                                <p class="text-xl font-semibold text-slate-900 mt-2">#<?php echo (int) $admin['id']; ?></p>
-                                <p class="text-sm text-slate-500 mt-2">Admin ID: <?php echo htmlspecialchars($admin['student_id']); ?></p>
+                                <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Admin ID</p>
+                                <p class="text-xl font-semibold text-slate-900 mt-2"><?php echo htmlspecialchars($admin['student_id'] ?: 'N/A'); ?></p>
                             </div>
                             <button type="button" class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700" data-admin-edit="<?php echo (int) $admin['id']; ?>" data-admin-id="<?php echo (int) $admin['id']; ?>" data-admin-name="<?php echo htmlspecialchars($admin['name'], ENT_QUOTES); ?>" data-admin-email="<?php echo htmlspecialchars($admin['email'], ENT_QUOTES); ?>" data-admin-student-id="<?php echo htmlspecialchars($admin['student_id'], ENT_QUOTES); ?>" data-admin-course="<?php echo htmlspecialchars($admin['course'], ENT_QUOTES); ?>">
                                 <i class="fas fa-pen-to-square mr-2"></i>Edit

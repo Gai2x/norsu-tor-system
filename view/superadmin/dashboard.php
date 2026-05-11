@@ -137,9 +137,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 <article class="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm transition hover:-translate-y-1 hover:border-slate-300 hover:bg-white">
                     <div class="flex items-start justify-between">
                         <div>
-                            <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Unique ID</p>
-                            <p class="text-lg font-semibold text-slate-900 mt-1">#${student.id}</p>
-                            <p class="text-sm text-slate-500">ID: ${student.student_id || 'N/A'}</p>
+                            <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Student ID</p>
+                            <p class="text-lg font-semibold text-slate-900 mt-1">${student.student_id || 'N/A'}</p>
                         </div>
                     </div>
                     <div class="mt-4 space-y-2 text-sm text-slate-600">
