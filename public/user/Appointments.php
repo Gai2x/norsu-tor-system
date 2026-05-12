@@ -24,13 +24,20 @@ if (isset($_GET['cancel']) && is_numeric($_GET['cancel'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['book_appointment'])) {
+    $purpose = trim($_POST['purpose'] ?? '');
+    if ($purpose === 'Other...') {
+        $purpose = trim($_POST['purpose_other'] ?? '');
+    }
+
     $data = [
         'appointment_date' => trim($_POST['appointment_date'] ?? ''),
         'appointment_time' => trim($_POST['appointment_time'] ?? ''),
         'service_type' => trim($_POST['service_type'] ?? ''),
+        'advisor_name' => trim($_POST['advisor_name'] ?? ''),
+        'purpose' => $purpose,
     ];
 
-    $result = $appointmentController->bookAppointment($data, $user_id);
+    $result = $appointmentController->bookAppointment($user_id, $data);
 
     $message = $result['message'];
     $messageType = $result['success'] ? 'success' : 'error';

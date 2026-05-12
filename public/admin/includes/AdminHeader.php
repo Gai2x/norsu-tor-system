@@ -137,6 +137,10 @@ if (!function_exists('adminNavClasses')) {
                 <i class="fas fa-chart-bar w-5 text-center"></i>
                 <span class="nav-text flex-1">Schedule</span>
             </a>
+            <a href="profile.php" class="sidebar-link <?php echo adminNavClasses('profile'); ?>">
+                <i class="fas fa-user-circle w-5 text-center"></i>
+                <span class="nav-text flex-1">Profile</span>
+            </a>
         </nav>
 
         <div class="p-4 border-t border-blue-700">

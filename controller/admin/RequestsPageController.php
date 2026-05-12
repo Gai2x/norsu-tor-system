@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/AdminPageController.php';
 require_once __DIR__ . '/AdminController.php';
+require_once __DIR__ . '/../../model/admin/AdminModel.php';
 
 class RequestsPageController
 {
@@ -16,6 +17,7 @@ class RequestsPageController
 
         $conn = $viewData['conn'];
         AdminController::updateRequestStatus($conn);
+        $adminModel = new AdminModel($conn);
         $search = trim($_GET['search'] ?? '');
 
         $regularRequests = [];
@@ -125,6 +127,9 @@ class RequestsPageController
             'allRequests' => $allRequests,
             'requests' => $allRequests,
             'search' => $search,
+            'serviceTypes' => $adminModel->getServiceTypes(),
+            'courses' => $adminModel->getCourses(),
+            'yearLevels' => $adminModel->getYearLevels(),
         ]);
     }
 }

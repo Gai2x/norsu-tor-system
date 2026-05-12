@@ -154,7 +154,7 @@
 </div>
 
 <div id="bookingModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4" style="display: none;">
-    <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div class="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
             <h2 class="text-xl font-bold text-gray-800">Book New Appointment</h2>
             <button onclick="closeBookingModal()" class="text-gray-400 hover:text-gray-600 transition">
@@ -162,10 +162,10 @@
             </button>
         </div>
 
-        <form method="POST" action="" class="p-6 space-y-5">
+        <form method="POST" action="" class="p-5 sm:p-6 space-y-5" id="bookingForm">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Service Type *</label>
-                <select name="service_type" required class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                <select name="service_type" required class="w-full min-h-[46px] px-4 py-3 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                     <option value="">Select a service</option>
                     <?php foreach ($appointment_types as $type): ?>
                     <option value="<?php echo htmlspecialchars($type['name']); ?>">
@@ -177,17 +177,17 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Advisor Name (Optional)</label>
-                <input type="text" name="advisor_name" placeholder="e.g., Dr. Maria Santos" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                <input type="text" name="advisor_name" placeholder="e.g., Dr. Maria Santos" class="w-full min-h-[46px] px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Appointment Date *</label>
-                <input type="date" name="appointment_date" required min="<?php echo date('Y-m-d'); ?>" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                <input type="date" name="appointment_date" required min="<?php echo date('Y-m-d'); ?>" class="w-full min-h-[46px] px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Appointment Time *</label>
-                <select name="appointment_time" required class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                <select name="appointment_time" required class="w-full min-h-[46px] px-4 py-3 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                     <option value="">Select a time</option>
                     <option value="08:00:00">8:00 AM</option>
                     <option value="09:00:00">9:00 AM</option>
@@ -202,7 +202,16 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Purpose / Reason for Appointment *</label>
-                <textarea name="purpose" required rows="4" placeholder="Please describe what you would like to discuss during this appointment..." class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"></textarea>
+                <select name="purpose" id="appointmentPurposeSelect" required class="w-full min-h-[46px] px-4 py-3 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    <option value="">Select a purpose</option>
+                    <option value="Academic consultation">Academic consultation</option>
+                    <option value="Grade clarification">Grade clarification</option>
+                    <option value="Enrollment assistance">Enrollment assistance</option>
+                    <option value="Document request follow-up">Document request follow-up</option>
+                    <option value="Scholarship or financial aid inquiry">Scholarship or financial aid inquiry</option>
+                    <option value="Other...">Other...</option>
+                </select>
+                <input type="text" name="purpose_other" id="appointmentPurposeOther" class="mt-3 hidden w-full min-h-[46px] px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Enter your appointment purpose">
             </div>
 
             <div class="bg-blue-50 rounded-xl p-4">
@@ -212,7 +221,7 @@
                 </p>
             </div>
 
-            <div class="flex gap-3 pt-4">
+            <div class="flex flex-col gap-3 pt-4 sm:flex-row">
                 <button type="button" onclick="closeBookingModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition">Cancel</button>
                 <button type="submit" name="book_appointment" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition shadow-md">
                     <i class="fas fa-calendar-check mr-2"></i>
@@ -256,6 +265,19 @@ document.addEventListener("keydown", function(e) {
 const dateInput = document.querySelector("input[name=\'appointment_date\']");
 if (dateInput) {
     dateInput.min = new Date().toISOString().split("T")[0];
+}
+
+const appointmentPurposeSelect = document.getElementById("appointmentPurposeSelect");
+const appointmentPurposeOther = document.getElementById("appointmentPurposeOther");
+if (appointmentPurposeSelect && appointmentPurposeOther) {
+    appointmentPurposeSelect.addEventListener("change", function() {
+        const useCustomPurpose = this.value === "Other...";
+        appointmentPurposeOther.classList.toggle("hidden", !useCustomPurpose);
+        appointmentPurposeOther.required = useCustomPurpose;
+        if (!useCustomPurpose) {
+            appointmentPurposeOther.value = "";
+        }
+    });
 }
 </script>
 '; ?>

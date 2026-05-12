@@ -139,25 +139,62 @@ class AdminModel
     public function getRequests(array $filters = [], int $page = 1, int $pageSize = 15): array
     {
         $offset = max(0, ($page - 1) * $pageSize);
-        $sql = "SELECT r.id, r.user_id, r.service_type, r.notes, r.year_level, 
+        $type = trim($filters['type'] ?? '');
+        $rows = [];
+
+        if ($type === '' || $type === 'regular') {
+            $rows = array_merge($rows, $this->getRegularRequests($filters));
+        }
+
+        if ($type === '' || $type === 'one_time') {
+            $rows = array_merge($rows, $this->getOneTimeRequests($filters));
+        }
+
+        usort($rows, function ($left, $right) {
+            return strtotime($right['created_at'] ?? '1970-01-01 00:00:00') <=> strtotime($left['created_at'] ?? '1970-01-01 00:00:00');
+        });
+
+        return array_slice($rows, $offset, $pageSize);
+    }
+
+    /**
+     * Count requests with filtering
+     */
+    public function countRequests(array $filters = []): int
+    {
+        $type = trim($filters['type'] ?? '');
+        $total = 0;
+
+        if ($type === '' || $type === 'regular') {
+            $total += count($this->getRegularRequests($filters));
+        }
+
+        if ($type === '' || $type === 'one_time') {
+            $total += count($this->getOneTimeRequests($filters));
+        }
+
+        return $total;
+    }
+
+    private function getRegularRequests(array $filters = []): array
+    {
+        $sql = "SELECT r.id, r.user_id, r.service_type, r.notes, r.year_level,
                        r.status, r.created_at,
-                       s.name, s.student_id, s.course, s.email
+                       s.name, s.name AS fullname, s.student_id, s.course, s.email,
+                       'regular' AS type
                 FROM requests r
-                JOIN students s ON r.user_id = s.id
+                LEFT JOIN students s ON r.user_id = s.id
                 WHERE 1=1";
-        
+
         $types = '';
         $params = [];
         $search = strtolower(trim($filters['search'] ?? ''));
 
         if ($search !== '') {
-            $sql .= " AND (LOWER(s.name) LIKE ? OR LOWER(s.student_id) LIKE ? OR LOWER(s.email) LIKE ? OR LOWER(r.notes) LIKE ?)";
-            $types .= 'ssss';
+            $sql .= " AND (LOWER(COALESCE(s.name, '')) LIKE ? OR LOWER(COALESCE(s.student_id, '')) LIKE ? OR LOWER(COALESCE(s.email, '')) LIKE ? OR LOWER(COALESCE(r.service_type, '')) LIKE ? OR LOWER(COALESCE(r.status, '')) LIKE ? OR LOWER(COALESCE(r.notes, '')) LIKE ? OR 'regular request' LIKE ? OR 'regular' LIKE ?)";
+            $types .= 'ssssssss';
             $searchValue = "%{$search}%";
-            $params[] = $searchValue;
-            $params[] = $searchValue;
-            $params[] = $searchValue;
-            $params[] = $searchValue;
+            $params = array_merge($params, array_fill(0, 8, $searchValue));
         }
 
         if (!empty($filters['status'])) {
@@ -190,10 +227,7 @@ class AdminModel
             $params[] = $filters['date'];
         }
 
-        $sql .= " ORDER BY r.created_at DESC LIMIT ? OFFSET ?";
-        $types .= 'ii';
-        $params[] = $pageSize;
-        $params[] = $offset;
+        $sql .= " ORDER BY r.created_at DESC, r.id DESC";
 
         $stmt = $this->conn->prepare($sql);
         if ($types) {
@@ -206,67 +240,58 @@ class AdminModel
         return $rows;
     }
 
-    /**
-     * Count requests with filtering
-     */
-    public function countRequests(array $filters = []): int
+    private function getOneTimeRequests(array $filters = []): array
     {
-        $sql = "SELECT COUNT(*) AS total FROM requests r JOIN students s ON r.user_id = s.id WHERE 1=1";
-        
+        if (!empty($filters['course']) || !empty($filters['year_level'])) {
+            return [];
+        }
+
+        $sql = "SELECT id, NULL AS user_id, service_type, notes, NULL AS year_level,
+                       status, created_at, fullname AS name, fullname, student_id,
+                       NULL AS course, email, 'one_time' AS type
+                FROM one_time_requests
+                WHERE 1=1";
+
         $types = '';
         $params = [];
         $search = strtolower(trim($filters['search'] ?? ''));
 
         if ($search !== '') {
-            $sql .= " AND (LOWER(s.name) LIKE ? OR LOWER(s.student_id) LIKE ? OR LOWER(s.email) LIKE ? OR LOWER(r.notes) LIKE ?)";
-            $types .= 'ssss';
+            $sql .= " AND (LOWER(COALESCE(fullname, '')) LIKE ? OR LOWER(COALESCE(student_id, '')) LIKE ? OR LOWER(COALESCE(email, '')) LIKE ? OR LOWER(COALESCE(service_type, '')) LIKE ? OR LOWER(COALESCE(status, '')) LIKE ? OR LOWER(COALESCE(notes, '')) LIKE ? OR 'one-time request' LIKE ? OR 'one time request' LIKE ? OR 'one_time' LIKE ?)";
+            $types .= 'sssssssss';
             $searchValue = "%{$search}%";
-            $params[] = $searchValue;
-            $params[] = $searchValue;
-            $params[] = $searchValue;
-            $params[] = $searchValue;
+            $params = array_merge($params, array_fill(0, 9, $searchValue));
         }
 
         if (!empty($filters['status'])) {
-            $sql .= " AND r.status = ?";
+            $sql .= " AND status = ?";
             $types .= 's';
             $params[] = $filters['status'];
         }
 
         if (!empty($filters['service_type'])) {
-            $sql .= " AND r.service_type = ?";
+            $sql .= " AND service_type = ?";
             $types .= 's';
             $params[] = $filters['service_type'];
         }
 
-        if (!empty($filters['course'])) {
-            $sql .= " AND s.course = ?";
-            $types .= 's';
-            $params[] = $filters['course'];
-        }
-
-        if (!empty($filters['year_level'])) {
-            $sql .= " AND r.year_level = ?";
-            $types .= 's';
-            $params[] = $filters['year_level'];
-        }
-
         if (!empty($filters['date'])) {
-            $sql .= " AND DATE(r.created_at) = ?";
+            $sql .= " AND DATE(created_at) = ?";
             $types .= 's';
             $params[] = $filters['date'];
         }
+
+        $sql .= " ORDER BY created_at DESC, id DESC";
 
         $stmt = $this->conn->prepare($sql);
         if ($types) {
             $this->bindParams($stmt, $types, $params);
         }
         $stmt->execute();
-        $result = $stmt->get_result();
-        $count = $result ? (int) ($result->fetch_assoc()['total'] ?? 0) : 0;
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
 
-        return $count;
+        return $rows;
     }
 
     /**

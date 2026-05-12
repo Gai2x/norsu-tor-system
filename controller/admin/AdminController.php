@@ -154,6 +154,7 @@ class AdminController {
         $filters = [
             'search' => trim($_GET['search'] ?? ''),
             'status' => trim($_GET['status'] ?? ''),
+            'type' => trim($_GET['type'] ?? ''),
             'service_type' => trim($_GET['service_type'] ?? ''),
             'course' => trim($_GET['course'] ?? ''),
             'year_level' => trim($_GET['year_level'] ?? ''),

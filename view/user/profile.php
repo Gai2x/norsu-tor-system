@@ -22,6 +22,18 @@ include __DIR__ . '/../../public/includes/user/Header.php';
         </button>
     </div>
 
+    <?php if (!empty($_SESSION['error'])): ?>
+        <div class="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-rose-700 font-semibold mb-6">
+            <?php echo escapeProfileValue($_SESSION['error']); unset($_SESSION['error']); ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if (isset($_GET['updated'])): ?>
+        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-emerald-700 font-semibold mb-6">
+            Profile updated successfully.
+        </div>
+    <?php endif; ?>
+
     <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="p-6 sm:p-8">
             <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
@@ -95,10 +107,11 @@ include __DIR__ . '/../../public/includes/user/Header.php';
         </div>
     </section>
 
-    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6">
+    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
             <h2 class="text-2xl font-bold mb-4 text-slate-800">Edit Profile</h2>
-            <form method="POST" enctype="multipart/form-data">
+            <form id="user-profile-form" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="update_profile" value="1">
                 <div class="mb-4">
                     <label class="block mb-2 font-semibold">Full Name</label>
                     <input type="text" name="name" value="<?php echo escapeProfileValue($fullName); ?>" class="w-full border rounded-lg px-4 py-3">
@@ -145,18 +158,29 @@ include __DIR__ . '/../../public/includes/user/Header.php';
                 </div>
                 <div class="mb-4">
                     <label class="block mb-2 font-semibold">Profile Picture</label>
-                    <input type="file" name="profile_pic" accept="image/*" class="w-full border rounded-lg px-4 py-3">
-                    <p class="text-sm text-gray-500 mt-1">Leave empty to keep current image</p>
+                    <input type="file" name="profile_pic" accept="image/png, image/jpeg, image/gif" class="w-full border rounded-lg px-4 py-3">
+                    <p class="text-sm text-gray-500 mt-1">Leave empty to keep current image. PNG, JPG, or GIF only, max 2MB.</p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="mb-4">
+                        <label class="block mb-2 font-semibold">New Password</label>
+                        <input type="password" name="new_password" minlength="6" placeholder="Leave blank to keep current password" class="w-full border rounded-lg px-4 py-3">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block mb-2 font-semibold">Confirm Password</label>
+                        <input type="password" name="confirm_password" minlength="6" placeholder="Confirm new password" class="w-full border rounded-lg px-4 py-3">
+                    </div>
                 </div>
                 <div class="flex justify-end gap-3 mt-6">
                     <button type="button" onclick="closeModal()" class="px-4 py-2 bg-gray-300 rounded-lg">Cancel</button>
-                    <button type="submit" name="update_profile" class="px-5 py-2 bg-blue-800 text-white rounded-lg">Save Changes</button>
+                    <button type="submit" name="update_profile" class="px-5 py-2 bg-blue-800 text-white rounded-lg" data-loading-text="Saving...">Save Changes</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
+<script src="/Norsu_Tor/public/js/ajax-utils.js"></script>
 <script>
 function openModal() {
     document.getElementById('editModal').classList.remove('hidden');
@@ -193,6 +217,32 @@ function validatePhone(input) {
         }
     });
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('user-profile-form');
+    if (!form || !window.AjaxUtils) {
+        return;
+    }
+
+    AjaxUtils.bindForm(form, {
+        url: 'profile.php',
+        onSuccess: function (data) {
+            if (data.success) {
+                AjaxUtils.createNotification('Profile updated successfully.', 'success');
+                setTimeout(function () {
+                    window.location.href = 'profile.php?updated=1';
+                }, 800);
+                return;
+            }
+
+            AjaxUtils.createNotification(data.errors ? data.errors.join(' ') : 'Unable to update profile.', 'error');
+        },
+        onError: function (error) {
+            const body = error.body || {};
+            AjaxUtils.createNotification(body.errors ? body.errors.join(' ') : 'Unable to update profile.', 'error');
+        }
+    });
+});
 </script>
 
 <?php include __DIR__ . '/../../public/includes/user/Footer.php'; ?>

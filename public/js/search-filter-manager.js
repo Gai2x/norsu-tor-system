@@ -17,6 +17,7 @@ class SearchFilterManager {
         this.pageSize = options.pageSize || 15;
         this.debounceDelay = options.debounceDelay || 300;
         this.itemTemplate = options.itemTemplate || this.defaultTemplate;
+        this.paginationTemplate = options.paginationTemplate || null;
         this.onResults = options.onResults || null;
         this.onError = options.onError || null;
 
@@ -137,11 +138,48 @@ class SearchFilterManager {
             return;
         }
 
-        const html = items.map(item => this.itemTemplate(item)).join('');
+        let html = items.map(item => this.itemTemplate(item)).join('');
+        html += this.renderPagination();
         this.container.innerHTML = html;
 
         // Re-initialize any event listeners if needed
+        this.attachPaginationEvents();
         this.initItemListeners();
+    }
+
+    renderPagination() {
+        const totalPages = this.getTotalPages();
+        if (totalPages <= 1) {
+            return '';
+        }
+
+        if (this.paginationTemplate && typeof this.paginationTemplate === 'function') {
+            return this.paginationTemplate({
+                currentPage: this.currentPage,
+                totalPages,
+                pageSize: this.pageSize,
+                totalItems: this.totalItems
+            });
+        }
+
+        let html = '<div class="col-span-full flex flex-wrap items-center justify-center gap-2 border-t border-slate-200 bg-slate-50 px-4 py-4">';
+        for (let page = 1; page <= totalPages; page++) {
+            const activeClass = page === this.currentPage
+                ? 'border-blue-700 bg-blue-700 text-white'
+                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300';
+            html += `<button type="button" class="inline-flex min-h-[40px] items-center justify-center rounded-xl border px-4 py-2 text-sm font-semibold ${activeClass}" data-search-page="${page}">${page}</button>`;
+        }
+        html += '</div>';
+        return html;
+    }
+
+    attachPaginationEvents() {
+        this.container.querySelectorAll('[data-search-page]').forEach(button => {
+            button.addEventListener('click', () => {
+                const page = parseInt(button.dataset.searchPage, 10);
+                this.goToPage(page);
+            });
+        });
     }
 
     showLoading() {

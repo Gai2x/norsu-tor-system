@@ -18,6 +18,11 @@ class RequestController {
             return ['success' => $success_message, 'error' => $error_message];
         }
 
+        if (trim((string) $notes) === '') {
+            $error_message = "Please select or enter the purpose of your request.";
+            return ['success' => $success_message, 'error' => $error_message];
+        }
+
         $uploaded_file = '';
         if (isset($file) && $file['error'] == UPLOAD_ERR_OK) {
             $allowed_types = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'];

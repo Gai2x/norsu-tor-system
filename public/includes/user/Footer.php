@@ -21,6 +21,7 @@ const sidebarOverlay = document.getElementById('sidebarOverlay');
 
 // Function to toggle sidebar collapse (desktop only)
 function toggleSidebarCollapse() {
+    if (!sidebar || !mainContent) return;
     if (window.innerWidth <= 1024) return;
     
     isSidebarCollapsed = !isSidebarCollapsed;
@@ -46,6 +47,7 @@ function toggleSidebarCollapse() {
 
 // Function to open mobile sidebar
 function openMobileSidebar() {
+    if (!sidebar || !sidebarOverlay) return;
     if (window.innerWidth <= 1024) {
         isMobileSidebarOpen = true;
         sidebar.style.transform = 'translateX(0)';
@@ -60,6 +62,7 @@ function openMobileSidebar() {
 
 // Function to close mobile sidebar
 function closeMobileSidebar() {
+    if (!sidebar || !sidebarOverlay) return;
     if (window.innerWidth <= 1024) {
         isMobileSidebarOpen = false;
         sidebar.style.transform = 'translateX(-100%)';
@@ -79,6 +82,8 @@ function toggleMobileSidebar() {
 
 // Initialize sidebar based on screen size
 function initSidebar() {
+    if (!sidebar || !mainContent || !sidebarOverlay) return;
+
     if (window.innerWidth <= 1024) {
         // Mobile view
         sidebar.style.transform = 'translateX(-100%)';
@@ -134,6 +139,14 @@ if (mobileMenuBtn) {
 if (sidebarOverlay) {
     sidebarOverlay.addEventListener('click', closeMobileSidebar);
 }
+
+document.querySelectorAll('#sidebar .sidebar-link').forEach(link => {
+    link.addEventListener('click', function() {
+        if (window.innerWidth <= 1024) {
+            closeMobileSidebar();
+        }
+    });
+});
 
 // Close mobile sidebar on escape key
 document.addEventListener('keydown', function(e) {

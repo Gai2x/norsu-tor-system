@@ -15,10 +15,15 @@ $success_message = '';
 $error_message = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_request'])) {
+    $notes = trim($_POST['notes'] ?? '');
+    if ($notes === 'Other...') {
+        $notes = trim($_POST['notes_other'] ?? '');
+    }
+
     $result = $requestController->submitRequest(
         $user_id,
         trim($_POST['service_type'] ?? ''),
-        trim($_POST['notes'] ?? ''),
+        $notes,
         trim($_POST['year_level'] ?? ''),
         trim($_POST['contact_number'] ?? ''),
         $_FILES['document'] ?? null

@@ -15,49 +15,6 @@ class ProfilePageController
 
         UserRoleModel::requireRole(UserRoleModel::ROLE_USER, '../Login.php');
 
-        if (isset($_POST['update_profile'])) {
-            $name = $_POST['name'];
-            $middle_name = $_POST['middle_name'];
-            $email = $_POST['email'];
-            $dob = $_POST['dob'];
-            $course = $_POST['course'];
-            $phone_number = $_POST['phone_number'];
-            $profile_image = $user['profile_image'] ?? null;
-
-            $phone_number = $_POST['phone_number'];
-
-            if (!preg_match('/^(09\d{9}|\+639\d{9})$/', $phone_number)) {
-                $_SESSION['error'] = "Invalid phone number format.";
-                header("Location: profile.php");
-                exit();
-            }
-
-            if (!empty($_FILES["profile_pic"]["name"])) {
-                $targetDir = "../../uploads/";
-                $fileName = time() . "_" . basename($_FILES["profile_pic"]["name"]);
-                $targetFile = $targetDir . $fileName;
-
-                if (move_uploaded_file($_FILES["profile_pic"]["tmp_name"], $targetFile)) {
-                    $profile_image = $fileName;
-                }
-            }
-
-            $stmt = $conn->prepare("UPDATE students SET name=?, email=?,middle_name=?, dob=?, course=?, phone_number=?, profile_image=? WHERE id=?");
-            $stmt->bind_param("sssssssi", $name, $email, $middle_name, $dob, $course, $phone_number, $profile_image, $_SESSION['user_id']);
-            $stmt->execute();
-            $stmt->close();
-
-            $_SESSION['name'] = $name;
-            $_SESSION['course'] = $course;
-            $_SESSION['profile_image'] = $profile_image;
-            $_SESSION['phone_number'] = $phone_number;
-            $_SESSION['dob'] = $dob;
-            $_SESSION['middle_name'] = $middle_name;
-
-            header("Location: profile.php?updated=1");
-            exit();
-        }
-
         $pageTitle = "My Profile - NORSU Academic Services";
         $pageSubtitle = "Student Appointment & Academic Services";
         $userId = (int) $_SESSION['user_id'];
@@ -83,6 +40,106 @@ class ProfilePageController
             session_unset();
             session_destroy();
             header("Location: ../Login.php");
+            exit();
+        }
+
+        if (isset($_POST['update_profile'])) {
+            $isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
+            $name = trim($_POST['name'] ?? '');
+            $middle_name = trim($_POST['middle_name'] ?? '');
+            $email = trim($_POST['email'] ?? '');
+            $dob = trim($_POST['dob'] ?? '');
+            $course = trim($_POST['course'] ?? '');
+            $phone_number = trim($_POST['phone_number'] ?? '');
+            $newPassword = (string) ($_POST['new_password'] ?? '');
+            $confirmPassword = (string) ($_POST['confirm_password'] ?? '');
+            $profile_image = $user['profile_image'] ?? null;
+            $errors = [];
+
+            if ($name === '') {
+                $errors[] = 'Full name is required.';
+            }
+
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $errors[] = 'A valid email address is required.';
+            }
+
+            if ($phone_number !== '' && !preg_match('/^(09\d{9}|\+639\d{9})$/', $phone_number)) {
+                $errors[] = 'Invalid phone number format.';
+            }
+
+            if ($newPassword !== '' || $confirmPassword !== '') {
+                if (strlen($newPassword) < 6) {
+                    $errors[] = 'New password must be at least 6 characters long.';
+                }
+                if ($newPassword !== $confirmPassword) {
+                    $errors[] = 'New password and confirmation do not match.';
+                }
+            }
+
+            if (!empty($_FILES["profile_pic"]["name"])) {
+                $imageInfo = @getimagesize($_FILES["profile_pic"]["tmp_name"]);
+                $allowedTypes = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_GIF => 'gif'];
+
+                if ($imageInfo === false || !isset($allowedTypes[$imageInfo[2]])) {
+                    $errors[] = 'Please upload a valid PNG, JPG, or GIF image.';
+                } elseif ($_FILES["profile_pic"]["size"] > 2 * 1024 * 1024) {
+                    $errors[] = 'Image size must be 2MB or less.';
+                } else {
+                    $fileName = time() . "_student_" . $userId . "." . $allowedTypes[$imageInfo[2]];
+                    $targetFile = __DIR__ . "/../../uploads/" . $fileName;
+
+                    if (move_uploaded_file($_FILES["profile_pic"]["tmp_name"], $targetFile)) {
+                        $profile_image = $fileName;
+                    } else {
+                        $errors[] = 'Unable to upload profile image. Please try again.';
+                    }
+                }
+            }
+
+            if (empty($errors)) {
+                if ($newPassword !== '') {
+                    $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+                    $stmt = $conn->prepare("UPDATE students SET name=?, email=?, middle_name=?, dob=?, course=?, phone_number=?, profile_image=?, password=? WHERE id=? AND role='student'");
+                    $stmt->bind_param("ssssssssi", $name, $email, $middle_name, $dob, $course, $phone_number, $profile_image, $hashedPassword, $userId);
+                } else {
+                    $stmt = $conn->prepare("UPDATE students SET name=?, email=?, middle_name=?, dob=?, course=?, phone_number=?, profile_image=? WHERE id=? AND role='student'");
+                    $stmt->bind_param("sssssssi", $name, $email, $middle_name, $dob, $course, $phone_number, $profile_image, $userId);
+                }
+
+                $success = $stmt->execute();
+                $stmt->close();
+
+                if ($success) {
+                    $_SESSION['name'] = $name;
+                    $_SESSION['course'] = $course;
+                    $_SESSION['profile_image'] = $profile_image;
+                    $_SESSION['phone_number'] = $phone_number;
+                    $_SESSION['dob'] = $dob;
+                    $_SESSION['middle_name'] = $middle_name;
+
+                    if ($isAjax) {
+                        header('Content-Type: application/json');
+                        echo json_encode(['success' => true, 'errors' => []]);
+                        exit();
+                    }
+
+                    header("Location: profile.php?updated=1");
+                    exit();
+                }
+
+                $errors[] = 'Unable to update profile at this time.';
+            }
+
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                http_response_code(422);
+                echo json_encode(['success' => false, 'errors' => $errors]);
+                exit();
+            }
+
+            $_SESSION['error'] = implode(' ', $errors);
+            header("Location: profile.php");
             exit();
         }
 

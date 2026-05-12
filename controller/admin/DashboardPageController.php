@@ -150,6 +150,32 @@ class DashboardPageController{
             LIMIT 3
         ");
 
+        $monthlyTrends = [];
+        $monthlyTrendsQuery = mysqli_query($conn, "
+            SELECT
+                month,
+                COUNT(*) AS count,
+                SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) AS approved,
+                SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) AS rejected
+            FROM (
+                SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, status
+                FROM requests
+                WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+
+                UNION ALL
+
+                SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, status
+                FROM one_time_requests
+                WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+            ) AS request_trends
+            GROUP BY month
+            ORDER BY month ASC
+        ");
+
+        if ($monthlyTrendsQuery) {
+            $monthlyTrends = mysqli_fetch_all($monthlyTrendsQuery, MYSQLI_ASSOC);
+        }
+
         $viewData['stats']['pending_requests'] = (int) $pendingRequests;
 
         return array_merge($viewData, $dashboardData, [
@@ -161,6 +187,7 @@ class DashboardPageController{
             'requests' => $requests,
             'appointments' => $appointments,
             'students' => $students,
+            'monthlyTrends' => $monthlyTrends,
         ]);
     }
 }

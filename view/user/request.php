@@ -86,7 +86,7 @@
             </div>
         </div>
 
-        <div class="p-6">
+        <div class="p-5 sm:p-6">
             <form method="POST" enctype="multipart/form-data" class="space-y-8">
                 <div>
                     <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -105,7 +105,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-2">Year Level</label>
                             <div class="relative">
                                 <i class="fas fa-layer-group absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                                <select name="year_level" required class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <select name="year_level" required class="w-full min-h-[46px] pl-10 pr-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="">Select year level</option>
                                     <option value="1st Year">1st Year</option>
                                     <option value="2nd Year">2nd Year</option>
@@ -143,7 +143,7 @@
                     <div class="space-y-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Service Type</label>
-                            <select name="service_type" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <select name="service_type" required class="w-full min-h-[46px] px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Select...</option>
                                 <option value="Document Request">Document Request (Transcript, Certificate, etc.)</option>
                                 <option value="Grade Inquiry">Grade Inquiry</option>
@@ -156,7 +156,16 @@
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Notes / Purpose</label>
-                            <textarea name="notes" rows="4" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Please provide the purpose of your request..."></textarea>
+                            <select name="notes" id="requestPurposeSelect" required class="w-full min-h-[46px] px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Select a purpose</option>
+                                <option value="For enrollment requirements">For enrollment requirements</option>
+                                <option value="For scholarship application">For scholarship application</option>
+                                <option value="For employment application">For employment application</option>
+                                <option value="For board exam or licensure requirement">For board exam or licensure requirement</option>
+                                <option value="For personal academic record">For personal academic record</option>
+                                <option value="Other...">Other...</option>
+                            </select>
+                            <input type="text" name="notes_other" id="requestPurposeOther" class="mt-3 hidden w-full min-h-[46px] px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter your request purpose">
                         </div>
 
                         <div>
@@ -174,7 +183,7 @@
                     </div>
                 </div>
 
-                <div class="flex gap-3 pt-4 border-t border-gray-200">
+                <div class="flex flex-col gap-3 pt-4 border-t border-gray-200 sm:flex-row">
                     <button type="reset" class="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium">Cancel</button>
                     <button type="submit" name="submit_request" class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-sm">Submit Request</button>
                 </div>
@@ -301,6 +310,19 @@ function updateFileName(file) {
 
     fileNameSpan.querySelector('span').textContent = file.name;
     fileNameSpan.classList.remove('hidden');
+}
+
+const requestPurposeSelect = document.getElementById('requestPurposeSelect');
+const requestPurposeOther = document.getElementById('requestPurposeOther');
+if (requestPurposeSelect && requestPurposeOther) {
+    requestPurposeSelect.addEventListener('change', () => {
+        const useCustomPurpose = requestPurposeSelect.value === 'Other...';
+        requestPurposeOther.classList.toggle('hidden', !useCustomPurpose);
+        requestPurposeOther.required = useCustomPurpose;
+        if (!useCustomPurpose) {
+            requestPurposeOther.value = '';
+        }
+    });
 }
 
 const style = document.createElement('style');

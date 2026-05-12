@@ -1,7 +1,7 @@
 <?php include __DIR__ . '/../../public/admin/includes/AdminHeader.php'; ?>
 
 <!-- CONTENT -->
-<div class="p-4 sm:p-6 lg:p-10">
+<div class="p-4 sm:p-6 lg:p-10 space-y-8">
     <div class="mb-8 rounded-3xl bg-white p-6 shadow sm:p-8">
         <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-800 mb-2">Admin Dashboard</h2>
         <p class="text-gray-500 text-base sm:text-lg lg:text-2xl">
@@ -160,6 +160,43 @@
             </div>
         </div>
     </div>
+
+    <?php if (!empty($monthlyTrends)): ?>
+    <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 sm:p-6 lg:p-8 overflow-hidden">
+        <div class="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h3 class="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-chart-line text-blue-500"></i>
+                    Request Trends
+                </h3>
+                <p class="text-sm text-gray-500 mt-1">Regular and one-time request volume for the last 6 months.</p>
+            </div>
+            <a href="Requests.php" class="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-blue-200 px-5 py-3 text-sm font-semibold text-blue-700 no-underline transition hover:bg-blue-50">
+                View Requests
+            </a>
+        </div>
+
+        <div class="w-full overflow-x-auto">
+            <div class="min-w-[420px] sm:min-w-0">
+                <div class="flex h-56 items-end gap-3 sm:gap-4">
+                    <?php foreach ($monthlyTrends as $trend): ?>
+                        <?php $barHeight = min(((int) ($trend['count'] ?? 0)) * 20, 170); ?>
+                        <div class="flex min-w-[56px] flex-1 flex-col items-center">
+                            <div class="group relative flex h-44 w-full items-end rounded-t-xl bg-blue-100">
+                                <div class="w-full rounded-t-xl bg-blue-600 transition-all duration-300 hover:bg-blue-700" style="height: <?php echo max($barHeight, 8); ?>px"></div>
+                                <div class="absolute -top-12 left-1/2 z-10 -translate-x-1/2 rounded-lg bg-gray-800 px-2 py-1 text-center text-xs text-white opacity-0 shadow transition group-hover:opacity-100 whitespace-nowrap">
+                                    <?php echo (int) ($trend['count'] ?? 0); ?> requests<br>
+                                    <?php echo (int) ($trend['approved'] ?? 0); ?> approved
+                                </div>
+                            </div>
+                            <p class="mt-2 text-center text-xs text-gray-500"><?php echo date('M Y', strtotime(($trend['month'] ?? date('Y-m')) . '-01')); ?></p>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 
 </div>
 

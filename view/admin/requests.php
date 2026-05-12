@@ -12,34 +12,54 @@
                 <h3 class="text-2xl sm:text-3xl font-bold text-gray-800">Request List</h3>
                 <p class="text-sm text-gray-500 mt-1">Regular and one-time requests in one queue.</p>
             </div>
-            <form method="GET" class="flex w-full flex-col gap-3 sm:flex-row lg:w-auto" id="requestSearchForm">
-                <div class="relative w-full lg:w-80">
+            <form class="grid w-full gap-3 lg:grid-cols-[minmax(0,1.5fr)_repeat(5,minmax(0,1fr))_auto]" id="admin-request-search-form">
+                <div class="relative">
                     <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400">
                         <i class="fas fa-search"></i>
                     </span>
                     <input
-                        id="requestSearchInput"
-                        name="search"
+                        id="admin-request-search"
                         type="search"
-                        value="<?php echo htmlspecialchars($search ?? ''); ?>"
-                        placeholder="Search student, type, or status"
+                        placeholder="Search student, ID, email, service, type, or status"
                         class="w-full rounded-2xl border border-gray-300 py-3 pl-11 pr-4 text-sm min-h-[46px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                 </div>
-                <div class="flex gap-3">
-                    <button type="submit" class="inline-flex min-h-[46px] items-center justify-center rounded-2xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800">Search</button>
-                    <?php if (!empty($search)): ?>
-                        <a href="Requests.php" class="inline-flex min-h-[46px] items-center justify-center rounded-2xl border border-gray-300 px-5 py-3 text-sm font-semibold text-gray-700 no-underline transition hover:bg-gray-50">Clear</a>
-                    <?php endif; ?>
-                </div>
+                <select id="admin-request-status-filter" class="rounded-2xl border border-gray-300 px-4 py-3 text-sm min-h-[46px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+                <select id="admin-request-type-filter" class="rounded-2xl border border-gray-300 px-4 py-3 text-sm min-h-[46px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Types</option>
+                    <option value="regular">Regular</option>
+                    <option value="one_time">One-Time</option>
+                </select>
+                <select id="admin-request-service-filter" class="rounded-2xl border border-gray-300 px-4 py-3 text-sm min-h-[46px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Services</option>
+                    <?php foreach (($serviceTypes ?? []) as $service): ?>
+                        <option value="<?php echo htmlspecialchars($service); ?>"><?php echo htmlspecialchars($service); ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <select id="admin-request-course-filter" class="rounded-2xl border border-gray-300 px-4 py-3 text-sm min-h-[46px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Courses</option>
+                    <?php foreach (($courses ?? []) as $course): ?>
+                        <option value="<?php echo htmlspecialchars($course); ?>"><?php echo htmlspecialchars($course); ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <input id="admin-request-date-filter" type="date" class="rounded-2xl border border-gray-300 px-4 py-3 text-sm min-h-[46px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button type="button" id="admin-request-reset" class="inline-flex min-h-[46px] items-center justify-center rounded-2xl border border-gray-300 px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">
+                    <i class="fas fa-redo mr-2"></i>Reset
+                </button>
             </form>
         </div>
 
-        <div class="border-b bg-gray-50 px-4 py-3 text-sm text-gray-500 sm:px-6 lg:px-8">
+        <div id="admin-request-result-count" class="border-b bg-gray-50 px-4 py-3 text-sm text-gray-500 sm:px-6 lg:px-8">
             Showing <?php echo count($allRequests); ?> <?php echo count($allRequests) === 1 ? 'request' : 'requests'; ?><?php echo !empty($search) ? ' for "' . htmlspecialchars($search) . '"' : ''; ?>.
         </div>
 
-        <div class="md:hidden p-4 space-y-4 bg-gray-50/70">
+        <div id="admin-requests-mobile" class="md:hidden p-4 space-y-4 bg-gray-50/70">
             <?php if (!empty($allRequests)): ?>
                 <?php foreach ($allRequests as $row): ?>
                     <?php $isOneTime = ($row['type'] ?? 'regular') === 'one_time'; ?>
@@ -108,7 +128,7 @@
                         <th class="px-6 lg:px-8 py-4">Action</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="admin-requests-table-body">
                 <?php if (!empty($allRequests)): ?>
                     <?php foreach ($allRequests as $row): ?>
                     <tr class="border-t hover:bg-gray-50">
@@ -153,7 +173,7 @@
                     <?php endforeach; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="9" class="text-center py-10 text-gray-500">No requests found.</td>
+                        <td colspan="8" class="text-center py-10 text-gray-500">No requests found.</td>
                     </tr>
                 <?php endif; ?>
                 </tbody>
@@ -162,22 +182,148 @@
     </div>
 </div>
 
-<?php $additionalScripts = ($additionalScripts ?? '') . "<script>
-(function () {
-    const form = document.getElementById('requestSearchForm');
-    const input = document.getElementById('requestSearchInput');
-    if (!form || !input) {
-        return;
+<script src="/Norsu_Tor/public/js/search-filter-manager.js"></script>
+<?php $additionalScripts = ($additionalScripts ?? '') . <<<'HTML'
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('admin-request-search-form');
+    const tableBody = document.getElementById('admin-requests-table-body');
+    const resetButton = document.getElementById('admin-request-reset');
+    const resultCount = document.getElementById('admin-request-result-count');
+
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+        });
     }
 
-    let debounceTimer;
-    input.addEventListener('input', function () {
-        clearTimeout(debounceTimer);
-        debounceTimer = window.setTimeout(function () {
-            form.requestSubmit();
-        }, 300);
+    const escapeHtml = function(value) {
+        const div = document.createElement('div');
+        div.textContent = value == null ? '' : String(value);
+        return div.innerHTML;
+    };
+
+    const formatDate = function(value) {
+        if (!value) {
+            return 'N/A';
+        }
+        const date = new Date(String(value).replace(' ', 'T'));
+        return Number.isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+    };
+
+    const requestRef = function(request) {
+        return 'REQ-' + String(request.id || '').padStart(5, '0');
+    };
+
+    const typeBadge = function(request) {
+        const isOneTime = String(request.type || 'regular') === 'one_time';
+        const label = isOneTime ? 'One-Time Request' : 'Regular Request';
+        const classes = isOneTime ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700';
+        return `<span class="${classes} px-3 py-1 rounded-full text-xs font-semibold">${label}</span>`;
+    };
+
+    const statusBadge = function(statusValue, textSize = 'text-sm') {
+        const status = String(statusValue || 'pending').toLowerCase();
+        const classes = status === 'approved'
+            ? 'bg-green-100 text-green-700'
+            : status === 'rejected'
+                ? 'bg-red-100 text-red-700'
+                : status === 'cancelled'
+                    ? 'bg-gray-100 text-gray-700'
+                    : 'bg-yellow-100 text-yellow-700';
+        return `<span class="${classes} px-3 py-1 rounded-full ${textSize} font-semibold">${escapeHtml(status.charAt(0).toUpperCase() + status.slice(1))}</span>`;
+    };
+
+    const actions = function(request) {
+        const id = encodeURIComponent(request.id);
+        if (String(request.type || 'regular') === 'one_time') {
+            return `
+                <div class="flex flex-wrap items-center gap-2">
+                    <a href="Requests.php?approve=${id}&type=one_time" onclick="return confirm('Approve this one-time request?')" class="inline-flex min-h-[44px] items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition no-underline"><i class="fas fa-check"></i>Approve</a>
+                    <a href="Requests.php?reject=${id}&type=one_time" onclick="return confirm('Reject this one-time request?')" class="inline-flex min-h-[44px] items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition no-underline"><i class="fas fa-times"></i>Reject</a>
+                </div>
+            `;
+        }
+        return `<a href="RequestView.php?id=${id}" class="inline-flex min-h-[44px] items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition no-underline"><i class="fas fa-eye"></i>View</a>`;
+    };
+
+    const search = new SearchFilterManager({
+        endpoint: '/Norsu_Tor/admin/ajax-search-requests',
+        container: document.getElementById('admin-requests-mobile'),
+        searchInput: document.getElementById('admin-request-search'),
+        filters: {
+            status: 'admin-request-status-filter',
+            type: 'admin-request-type-filter',
+            service_type: 'admin-request-service-filter',
+            course: 'admin-request-course-filter',
+            date: 'admin-request-date-filter'
+        },
+        pageSize: 15,
+        itemTemplate: function(request) {
+            const name = escapeHtml(request.name || request.fullname || 'N/A');
+            const studentId = escapeHtml(request.student_id || 'N/A');
+            const service = escapeHtml(request.service_type || 'N/A');
+
+            return `
+                <article class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="text-xs font-semibold tracking-wide text-gray-400 uppercase">#${escapeHtml(requestRef(request))}</p>
+                            <h4 class="text-lg font-semibold text-gray-800 mt-1">${name}</h4>
+                            <p class="text-sm text-gray-500">${studentId}</p>
+                        </div>
+                        ${statusBadge(request.status, 'text-xs')}
+                    </div>
+                    <div class="flex flex-wrap gap-2">${typeBadge(request)}</div>
+                    <dl class="grid grid-cols-1 gap-3 text-sm">
+                        <div><dt class="text-gray-400">Service</dt><dd class="text-gray-700 font-medium">${service}</dd></div>
+                        <div><dt class="text-gray-400">Date</dt><dd class="text-gray-700 font-medium">${formatDate(request.created_at)}</dd></div>
+                    </dl>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${actions(request)}</div>
+                </article>
+            `;
+        },
+        onResults: function(data) {
+            const items = data.items || [];
+            const total = data.total ?? data.pagination?.totalItems ?? items.length;
+
+            if (resultCount) {
+                resultCount.textContent = `Showing ${items.length} of ${total} ${total === 1 ? 'request' : 'requests'}.`;
+            }
+
+            if (!tableBody) {
+                return;
+            }
+
+            if (!items.length) {
+                tableBody.innerHTML = '<tr><td colspan="8" class="text-center py-10 text-gray-500">No requests found.</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = items.map(function(request) {
+                return `
+                    <tr class="border-t hover:bg-gray-50">
+                        <td class="px-6 lg:px-8 py-5 font-semibold sticky left-0 bg-white">${escapeHtml(requestRef(request))}</td>
+                        <td class="px-6 lg:px-8 py-5">${typeBadge(request)}</td>
+                        <td class="px-6 lg:px-8 py-5">${escapeHtml(request.name || request.fullname || 'N/A')}</td>
+                        <td class="px-6 lg:px-8 py-5">${escapeHtml(request.student_id || 'N/A')}</td>
+                        <td class="px-6 lg:px-8 py-5">${escapeHtml(request.service_type || 'N/A')}</td>
+                        <td class="px-6 lg:px-8 py-5">${formatDate(request.created_at)}</td>
+                        <td class="px-6 lg:px-8 py-5">${statusBadge(request.status)}</td>
+                        <td class="px-6 lg:px-8 py-5">${actions(request)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
     });
-})();
-</script>"; ?>
+
+    if (resetButton) {
+        resetButton.addEventListener('click', function() {
+            search.reset();
+        });
+    }
+});
+</script>
+HTML; ?>
 
 <?php include __DIR__ . '/../../public/admin/includes/AdminFooter.php'; ?>
