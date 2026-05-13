@@ -120,13 +120,11 @@ if (!function_exists('superAdminNavClasses')) {
             </div>
 
             <div class="flex items-center gap-3 sm:gap-4">
-                <button class="relative text-gray-500 hover:text-blue-600 transition p-2 rounded-lg hover:bg-gray-100">
-                    <i class="fas fa-bell text-xl"></i>
-                    <?php $totalPending = ($stats['pending_requests'] ?? 0) + ($stats['pending_appointments'] ?? 0); ?>
-                    <?php if ($totalPending > 0): ?>
-                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center shadow-md"><?php echo min((int) $totalPending, 9); ?></span>
-                    <?php endif; ?>
-                </button>
+                <?php
+                $notificationModalId = 'superadminNotificationModal';
+                $notificationBadgeCount = ($stats['pending_requests'] ?? 0) + ($stats['pending_appointments'] ?? 0);
+                include __DIR__ . '/../../includes/shared/NotificationModal.php';
+                ?>
                 <div class="flex items-center gap-2 sm:gap-3 p-1 sm:p-2 rounded-xl">
                     <div class="bg-gradient-to-br from-yellow-400 to-yellow-500 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-blue-900 shadow-md flex-shrink-0">
                         <i class="fas fa-user-shield text-blue-900"></i>

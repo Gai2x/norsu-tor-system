@@ -10,7 +10,9 @@ class StudentsPageController
     {
         $viewData = AdminPageController::boot(
             'Students',
-            'Registered Student Accounts'
+            'Registered Student Accounts',
+            [],
+            'students'
         );
 
         $conn = $viewData['conn'];

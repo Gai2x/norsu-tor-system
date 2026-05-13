@@ -25,7 +25,7 @@
                 </div>
                 <div>
                     <p class="text-sm font-medium text-gray-800"><?php echo htmlspecialchars($request['service_type']); ?></p>
-                    <p class="text-xs text-gray-500"><?php echo date('M d, Y', strtotime($request['created_at'])); ?></p>
+                    <p class="text-xs text-gray-500"><?php echo str_pad((string) $request['id'], 5, '0', STR_PAD_LEFT); ?> - <?php echo date('M d, Y', strtotime($request['created_at'])); ?></p>
                 </div>
             </div>
             <span class="status-badge status-<?php echo $request['status']; ?> text-xs whitespace-nowrap ml-2">

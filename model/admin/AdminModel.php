@@ -314,9 +314,10 @@ class AdminModel
         $search = strtolower(trim($filters['search'] ?? ''));
 
         if ($search !== '') {
-            $sql .= " AND (LOWER(s.name) LIKE ? OR LOWER(s.student_id) LIKE ? OR LOWER(s.email) LIKE ? OR LOWER(s.course) LIKE ? OR LOWER(a.appointment_type) LIKE ? OR LOWER(a.purpose) LIKE ?)";
-            $types .= 'ssssss';
+            $sql .= " AND (LOWER(s.name) LIKE ? OR LOWER(s.student_id) LIKE ? OR LOWER(s.email) LIKE ? OR LOWER(s.course) LIKE ? OR LOWER(a.appointment_type) LIKE ? OR LOWER(COALESCE(a.service_type, '')) LIKE ? OR LOWER(a.purpose) LIKE ?)";
+            $types .= 'sssssss';
             $searchValue = "%{$search}%";
+            $params[] = $searchValue;
             $params[] = $searchValue;
             $params[] = $searchValue;
             $params[] = $searchValue;
@@ -383,9 +384,10 @@ class AdminModel
         $search = strtolower(trim($filters['search'] ?? ''));
 
         if ($search !== '') {
-            $sql .= " AND (LOWER(s.name) LIKE ? OR LOWER(s.student_id) LIKE ? OR LOWER(s.email) LIKE ? OR LOWER(s.course) LIKE ? OR LOWER(a.appointment_type) LIKE ? OR LOWER(a.purpose) LIKE ?)";
-            $types .= 'ssssss';
+            $sql .= " AND (LOWER(s.name) LIKE ? OR LOWER(s.student_id) LIKE ? OR LOWER(s.email) LIKE ? OR LOWER(s.course) LIKE ? OR LOWER(a.appointment_type) LIKE ? OR LOWER(COALESCE(a.service_type, '')) LIKE ? OR LOWER(a.purpose) LIKE ?)";
+            $types .= 'sssssss';
             $searchValue = "%{$search}%";
+            $params[] = $searchValue;
             $params[] = $searchValue;
             $params[] = $searchValue;
             $params[] = $searchValue;

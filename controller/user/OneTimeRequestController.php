@@ -2,15 +2,23 @@
 require_once __DIR__ . '/../../database/connection.php';
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
 
     $student_id   = trim($_POST['student_id'] ?? '');
     $fullname     = trim($_POST['fullname'] ?? '');
     $contact      = trim($_POST['contact'] ?? '');
     $email        = trim($_POST['email'] ?? '');
+    $category     = trim($_POST['category'] ?? '');
     $service_type = trim($_POST['service_type'] ?? '');
     $notes        = trim($_POST['notes'] ?? '');
+    $notes_other  = trim($_POST['notes_other'] ?? '');
+    $appointment_date = trim($_POST['appointment_date'] ?? '');
+    $appointment_time = trim($_POST['appointment_time'] ?? '');
 
     $errors = [];
+    $allowedCategories = ['Document Request', 'Appointment'];
 
     /* =========================
        REQUIRED FIELDS
@@ -20,9 +28,34 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         empty($fullname) ||
         empty($contact) ||
         empty($email) ||
+        empty($category) ||
         empty($service_type)
     ) {
         $errors[] = "Please fill in all required fields.";
+    }
+
+    if (!in_array($category, $allowedCategories, true)) {
+        $errors[] = "Please select a valid category.";
+    }
+
+    if ($category === 'Appointment') {
+        if ($appointment_date === '') {
+            $errors[] = "Appointment date is required.";
+        }
+
+        if ($appointment_time === '') {
+            $errors[] = "Appointment time is required.";
+        }
+    } else {
+        $appointment_date = '';
+        $appointment_time = '';
+    }
+
+    if ($notes === 'Other...') {
+        $notes = $notes_other;
+        if ($notes === '') {
+            $errors[] = "Please enter the purpose of your request.";
+        }
     }
 
     /* =========================
@@ -66,6 +99,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $errors[] = "Invalid email format.";
     }
 
+    $storedNotes = trim($notes);
+    $noteParts = ["Category: {$category}"];
+    if ($category === 'Appointment') {
+        $noteParts[] = "Appointment Date: {$appointment_date}";
+        $noteParts[] = "Appointment Time: {$appointment_time}";
+    }
+    if ($storedNotes !== '') {
+        $noteParts[] = "Purpose: {$storedNotes}";
+    }
+    $storedNotes = implode("\n", $noteParts);
+
     /* =========================
        SHOW ERRORS
     ========================= */
@@ -106,7 +150,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $contact,
         $email,
         $service_type,
-        $notes
+        $storedNotes
     );
 
     if ($stmt->execute()) {

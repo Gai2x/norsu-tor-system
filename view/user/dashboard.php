@@ -106,33 +106,6 @@
     </div>
     <?php endif; ?>
 
-    <?php if (!empty($dashboardData['monthly_trends'])): ?>
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6">
-        <h3 class="text-base sm:text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <i class="fas fa-chart-line text-blue-500"></i>
-            Request Trends (Last 6 Months)
-        </h3>
-        <div class="overflow-x-auto">
-            <div class="min-w-[500px]">
-                <div class="flex items-end space-x-2 h-48">
-                    <?php foreach ($dashboardData['monthly_trends'] as $trend): ?>
-                    <div class="flex-1 flex flex-col items-center">
-                        <div class="w-full bg-blue-100 rounded-t-lg relative group">
-                            <div class="bg-blue-600 rounded-t-lg transition-all duration-300 hover:bg-blue-700" style="height: <?php echo min($trend['count'] * 20, 150); ?>px"></div>
-                            <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition whitespace-nowrap">
-                                <?php echo $trend['count']; ?> requests
-                                <br>
-                                <?php echo $trend['approved']; ?> approved
-                            </div>
-                        </div>
-                        <p class="text-xs text-gray-500 mt-2"><?php echo date('M Y', strtotime($trend['month'] . '-01')); ?></p>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-        </div>
-    </div>
-    <?php endif; ?>
 </div>
 
 <?php include __DIR__ . '/../../public/includes/user/Footer.php'; ?>

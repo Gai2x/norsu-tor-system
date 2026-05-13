@@ -12,7 +12,7 @@
                 <h3 class="text-2xl sm:text-3xl font-bold text-gray-800">Request List</h3>
                 <p class="text-sm text-gray-500 mt-1">Regular and one-time requests in one queue.</p>
             </div>
-            <form class="grid w-full gap-3 lg:grid-cols-[minmax(0,1.5fr)_repeat(5,minmax(0,1fr))_auto]" id="admin-request-search-form">
+            <form class="grid w-full gap-3 lg:grid-cols-[minmax(0,1.5fr)_auto_repeat(5,minmax(0,1fr))_auto]" id="admin-request-search-form">
                 <div class="relative">
                     <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400">
                         <i class="fas fa-search"></i>
@@ -24,6 +24,9 @@
                         class="w-full rounded-2xl border border-gray-300 py-3 pl-11 pr-4 text-sm min-h-[46px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                 </div>
+                <button type="button" id="admin-request-search-button" class="inline-flex min-h-[46px] items-center justify-center rounded-2xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800">
+                    <i class="fas fa-search mr-2"></i>Search
+                </button>
                 <select id="admin-request-status-filter" class="rounded-2xl border border-gray-300 px-4 py-3 text-sm min-h-[46px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">All Statuses</option>
                     <option value="pending">Pending</option>
@@ -179,6 +182,7 @@
                 </tbody>
             </table>
         </div>
+        <div id="admin-requests-pagination" class="hidden md:block"></div>
     </div>
 </div>
 
@@ -250,7 +254,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const search = new SearchFilterManager({
         endpoint: '/Norsu_Tor/admin/ajax-search-requests',
         container: document.getElementById('admin-requests-mobile'),
+        paginationContainer: document.getElementById('admin-requests-pagination'),
         searchInput: document.getElementById('admin-request-search'),
+        searchButton: document.getElementById('admin-request-search-button'),
         filters: {
             status: 'admin-request-status-filter',
             type: 'admin-request-type-filter',
@@ -259,6 +265,11 @@ document.addEventListener('DOMContentLoaded', function() {
             date: 'admin-request-date-filter'
         },
         pageSize: 15,
+        onLoading: function() {
+            if (tableBody) {
+                tableBody.innerHTML = '<tr><td colspan="8" class="text-center py-10 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</td></tr>';
+            }
+        },
         itemTemplate: function(request) {
             const name = escapeHtml(request.name || request.fullname || 'N/A');
             const studentId = escapeHtml(request.student_id || 'N/A');

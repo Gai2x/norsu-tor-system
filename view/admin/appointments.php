@@ -46,13 +46,16 @@
                 <h3 class="text-2xl sm:text-3xl font-bold text-gray-800">All Appointments</h3>
                 <p class="text-sm text-gray-500 mt-1">Review, approve, and reject appointment bookings.</p>
             </div>
-            <form id="admin-appointment-search-form" class="grid gap-3 xl:grid-cols-[minmax(0,1.5fr)_repeat(5,minmax(0,1fr))_auto]">
+            <form id="admin-appointment-search-form" class="grid gap-3 xl:grid-cols-[minmax(0,1.5fr)_auto_repeat(5,minmax(0,1fr))_auto]">
                 <div class="relative">
                     <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400">
                         <i class="fas fa-search"></i>
                     </span>
                     <input id="admin-appointment-search" type="search" placeholder="Search student, ID, email, course, type, or purpose" class="w-full rounded-2xl border border-gray-300 py-3 pl-11 pr-4 text-sm min-h-[46px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
+                <button type="button" id="admin-appointment-search-button" class="inline-flex min-h-[46px] items-center justify-center rounded-2xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800">
+                    <i class="fas fa-search mr-2"></i>Search
+                </button>
                 <select id="admin-appointment-status-filter" class="rounded-2xl border border-gray-300 px-4 py-3 text-sm min-h-[46px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">All Statuses</option>
                     <option value="pending">Pending</option>
@@ -199,6 +202,7 @@
                 </tbody>
             </table>
         </div>
+        <div id="admin-appointments-pagination" class="hidden md:block"></div>
     </div>
 </div>
 
@@ -266,7 +270,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const search = new SearchFilterManager({
         endpoint: '/Norsu_Tor/admin/ajax-search-appointments',
         container: document.getElementById('admin-appointments-mobile'),
+        paginationContainer: document.getElementById('admin-appointments-pagination'),
         searchInput: document.getElementById('admin-appointment-search'),
+        searchButton: document.getElementById('admin-appointment-search-button'),
         filters: {
             status: 'admin-appointment-status-filter',
             appointment_type: 'admin-appointment-type-filter',
@@ -275,6 +281,11 @@ document.addEventListener('DOMContentLoaded', function() {
             year_level: 'admin-appointment-year-filter'
         },
         pageSize: 15,
+        onLoading: function() {
+            if (tableBody) {
+                tableBody.innerHTML = '<tr><td colspan="10" class="text-center py-10 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</td></tr>';
+            }
+        },
         itemTemplate: function(appointment) {
             const id = escapeHtml(appointment.id);
             const name = escapeHtml(appointment.name || 'N/A');

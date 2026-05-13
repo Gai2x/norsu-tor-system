@@ -9,7 +9,9 @@ class SchedulePageController
     {
         $viewData = AdminPageController::boot(
             'Schedule',
-            'Manage Appointment Schedules'
+            'Manage Appointment Schedules',
+            [],
+            'schedule'
         );
 
         $conn = $viewData['conn'];

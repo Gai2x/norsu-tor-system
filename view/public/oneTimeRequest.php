@@ -156,6 +156,46 @@ unset($_SESSION['errors']);
 
                 </div>
 
+                <!-- Category -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">
+                        Category <span class="text-red-500">*</span>
+                    </label>
+
+                    <select id="category"
+                        name="category"
+                        required
+                        class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50">
+                        <option value="">Select Category</option>
+                        <option value="Document Request" <?= (($old['category'] ?? '') === 'Document Request') ? 'selected' : ''; ?>>Document Request</option>
+                        <option value="Appointment" <?= (($old['category'] ?? '') === 'Appointment') ? 'selected' : ''; ?>>Appointment</option>
+                    </select>
+                </div>
+
+                <div id="appointmentFields" class="grid grid-cols-1 md:grid-cols-2 gap-6 hidden">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">
+                            Appointment Date <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date"
+                            id="appointment_date"
+                            name="appointment_date"
+                            value="<?= htmlspecialchars($old['appointment_date'] ?? '') ?>"
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">
+                            Appointment Time <span class="text-red-500">*</span>
+                        </label>
+                        <input type="time"
+                            id="appointment_time"
+                            name="appointment_time"
+                            value="<?= htmlspecialchars($old['appointment_time'] ?? '') ?>"
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50">
+                    </div>
+                </div>
+
                 <!-- Service -->
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1">
@@ -193,18 +233,42 @@ unset($_SESSION['errors']);
                     </select>
                 </div>
 
-                <!-- Notes -->
+                <!-- Purpose -->
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1">
                         Notes / Purpose
                     </label>
 
-                    <textarea
+                    <select
                         id="notes"
                         name="notes"
-                        rows="3"
-                        class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
-                        placeholder="Please provide any additional information..."><?= htmlspecialchars($old['notes'] ?? '') ?></textarea>
+                        class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50">
+                        <option value="">Select Purpose</option>
+                        <?php
+                        $purposeOptions = [
+                            'For enrollment requirements',
+                            'For scholarship application',
+                            'For employment application',
+                            'For board exam or licensure requirement',
+                            'For personal academic record',
+                            'For academic consultation',
+                            'Other...'
+                        ];
+
+                        foreach ($purposeOptions as $purpose):
+                        ?>
+                            <option value="<?= htmlspecialchars($purpose); ?>" <?= (($old['notes'] ?? '') === $purpose) ? 'selected' : ''; ?>>
+                                <?= htmlspecialchars($purpose); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+
+                    <input type="text"
+                        id="notes_other"
+                        name="notes_other"
+                        value="<?= htmlspecialchars($old['notes_other'] ?? '') ?>"
+                        class="mt-3 hidden w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                        placeholder="Enter your purpose">
 
                     <p class="text-xs text-gray-400 mt-1">
                         Optional
@@ -253,6 +317,11 @@ document.getElementById("requestForm").addEventListener("submit", function(e) {
     const student = document.getElementById("student_id");
     const fullname = document.getElementById("fullname");
     const contact = document.getElementById("contact");
+    const category = document.getElementById("category");
+    const appointmentDate = document.getElementById("appointment_date");
+    const appointmentTime = document.getElementById("appointment_time");
+    const notes = document.getElementById("notes");
+    const notesOther = document.getElementById("notes_other");
 
     document.querySelectorAll("input, select").forEach(el => {
         el.classList.remove("input-error");
@@ -273,11 +342,64 @@ document.getElementById("requestForm").addEventListener("submit", function(e) {
         valid = false;
     }
 
+    if (!category.value) {
+        category.classList.add("input-error");
+        valid = false;
+    }
+
+    if (category.value === "Appointment") {
+        if (!appointmentDate.value) {
+            appointmentDate.classList.add("input-error");
+            valid = false;
+        }
+        if (!appointmentTime.value) {
+            appointmentTime.classList.add("input-error");
+            valid = false;
+        }
+    }
+
+    if (notes.value === "Other..." && !notesOther.value.trim()) {
+        notesOther.classList.add("input-error");
+        valid = false;
+    }
+
     if (!valid) {
         e.preventDefault();
         alert("Please correct highlighted fields.");
     }
 });
+
+const categorySelect = document.getElementById("category");
+const appointmentFields = document.getElementById("appointmentFields");
+const appointmentDate = document.getElementById("appointment_date");
+const appointmentTime = document.getElementById("appointment_time");
+const purposeSelect = document.getElementById("notes");
+const purposeOther = document.getElementById("notes_other");
+
+function syncAppointmentFields() {
+    const showAppointmentFields = categorySelect.value === "Appointment";
+    appointmentFields.classList.toggle("hidden", !showAppointmentFields);
+    appointmentDate.required = showAppointmentFields;
+    appointmentTime.required = showAppointmentFields;
+    if (!showAppointmentFields) {
+        appointmentDate.value = "";
+        appointmentTime.value = "";
+    }
+}
+
+function syncPurposeOther() {
+    const showOther = purposeSelect.value === "Other...";
+    purposeOther.classList.toggle("hidden", !showOther);
+    purposeOther.required = showOther;
+    if (!showOther) {
+        purposeOther.value = "";
+    }
+}
+
+categorySelect.addEventListener("change", syncAppointmentFields);
+purposeSelect.addEventListener("change", syncPurposeOther);
+syncAppointmentFields();
+syncPurposeOther();
 </script>
 
 <?php include __DIR__ . '/../../public/includes/landing/Footer.php'; ?>

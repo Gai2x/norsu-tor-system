@@ -140,12 +140,11 @@ $userHeader = $userHeader ?? null;
             </div>
             
             <div class="flex items-center gap-3 sm:gap-4">
-                <button class="relative text-gray-500 hover:text-blue-600 transition p-2 rounded-lg hover:bg-gray-100">
-                    <i class="fas fa-bell text-xl"></i>
-                    <?php if(isset($stats['pending_requests']) && $stats['pending_requests'] > 0): ?>
-                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center shadow-md"><?php echo min($stats['pending_requests'], 9); ?></span>
-                    <?php endif; ?>
-                </button>
+                <?php
+                $notificationModalId = 'userNotificationModal';
+                $notificationBadgeCount = $stats['pending_requests'] ?? 0;
+                include __DIR__ . '/../shared/NotificationModal.php';
+                ?>
 
                 <div class="flex items-center gap-2 sm:gap-3 cursor-pointer hover:bg-gray-50 p-1 sm:p-2 rounded-xl transition" onclick="window.location.href='profile.php'">
                    <?php

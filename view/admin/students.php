@@ -21,13 +21,16 @@ if ($students && mysqli_num_rows($students) > 0) {
                 <h3 class="text-2xl sm:text-3xl font-bold text-gray-800">Student List</h3>
                 <p class="text-sm text-gray-500 mt-1">Browse student records and open profile actions.</p>
             </div>
-            <form id="admin-student-search-form" class="grid gap-3 lg:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))_auto]">
+            <form id="admin-student-search-form" class="grid gap-3 lg:grid-cols-[minmax(0,1.5fr)_auto_repeat(3,minmax(0,1fr))_auto]">
                 <div class="relative">
                     <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400">
                         <i class="fas fa-search"></i>
                     </span>
                     <input id="admin-student-search" type="search" placeholder="Search name, student ID, email, or course" class="w-full rounded-2xl border border-gray-300 py-3 pl-11 pr-4 text-sm min-h-[46px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
+                <button type="button" id="admin-student-search-button" class="inline-flex min-h-[46px] items-center justify-center rounded-2xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800">
+                    <i class="fas fa-search mr-2"></i>Search
+                </button>
                 <select id="admin-student-course-filter" class="rounded-2xl border border-gray-300 px-4 py-3 text-sm min-h-[46px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">All Courses</option>
                     <?php foreach (($courses ?? []) as $course): ?>
@@ -121,12 +124,13 @@ if ($students && mysqli_num_rows($students) > 0) {
                     <?php endforeach; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="7" class="text-center py-10 text-gray-500">No students found.</td>
+                        <td colspan="6" class="text-center py-10 text-gray-500">No students found.</td>
                     </tr>
                 <?php endif; ?>
                 </tbody>
             </table>
         </div>
+        <div id="admin-students-pagination" class="hidden md:block"></div>
     </div>
 </div>
 
@@ -177,13 +181,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const search = new SearchFilterManager({
         endpoint: '/Norsu_Tor/admin/ajax-search-students',
         container: document.getElementById('admin-students-mobile'),
+        paginationContainer: document.getElementById('admin-students-pagination'),
         searchInput: document.getElementById('admin-student-search'),
+        searchButton: document.getElementById('admin-student-search-button'),
         filters: {
             course: 'admin-student-course-filter',
             year_level: 'admin-student-year-filter',
             status: 'admin-student-status-filter'
         },
         pageSize: 15,
+        onLoading: function() {
+            if (tableBody) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</td></tr>';
+            }
+        },
         itemTemplate: function(student) {
             const id = escapeHtml(student.id);
             const name = escapeHtml(student.name || 'N/A');
@@ -216,16 +227,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             if (!items.length) {
-                tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-10 text-gray-500">No students found.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-500">No students found.</td></tr>';
                 return;
             }
             tableBody.innerHTML = items.map(function(student) {
-                const id = escapeHtml(student.id);
                 return `
                     <tr class="border-t hover:bg-gray-50">
-                        <td class="px-6 lg:px-8 py-5 font-semibold sticky left-0 bg-white">#STU-${id}</td>
-                        <td class="px-6 lg:px-8 py-5">${escapeHtml(student.name || 'N/A')}</td>
                         <td class="px-6 lg:px-8 py-5">${escapeHtml(student.student_id || 'N/A')}</td>
+                        <td class="px-6 lg:px-8 py-5 font-semibold sticky left-0 bg-white">${escapeHtml(student.name || 'N/A')}</td>
                         <td class="px-6 lg:px-8 py-5">${escapeHtml(student.email || 'N/A')}</td>
                         <td class="px-6 lg:px-8 py-5">${escapeHtml(student.course || 'N/A')}</td>
                         <td class="px-6 lg:px-8 py-5">${formatDate(student.created_at)}</td>

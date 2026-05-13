@@ -223,7 +223,7 @@
                 <tbody class="divide-y divide-gray-200">
                     <?php foreach (array_slice($requests, 0, 10) as $request): ?>
                     <tr class="hover:bg-gray-50 transition">
-                        <td class="px-6 py-4 text-sm text-gray-900">#<?php echo $request['id']; ?></td>
+                        <td class="px-6 py-4 text-sm text-gray-900"><?php echo str_pad((string) $request['id'], 5, '0', STR_PAD_LEFT); ?></td>
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-2">
                                 <i class="fas <?php echo $request['service_type'] === 'Document Request' ? 'fa-file-alt' : ($request['service_type'] === 'Grade Inquiry' ? 'fa-chart-line' : ($request['service_type'] === 'Academic Advising' ? 'fa-chalkboard-user' : 'fa-question-circle')); ?> text-blue-500"></i>

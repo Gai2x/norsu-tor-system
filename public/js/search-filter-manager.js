@@ -11,6 +11,7 @@ class SearchFilterManager {
 
         // Input selectors
         this.searchInput = options.searchInput || null;
+        this.searchButton = options.searchButton || null;
         this.filters = options.filters || {};
 
         // Configuration
@@ -18,7 +19,9 @@ class SearchFilterManager {
         this.debounceDelay = options.debounceDelay || 300;
         this.itemTemplate = options.itemTemplate || this.defaultTemplate;
         this.paginationTemplate = options.paginationTemplate || null;
+        this.paginationContainer = options.paginationContainer || null;
         this.onResults = options.onResults || null;
+        this.onLoading = options.onLoading || null;
         this.onError = options.onError || null;
 
         // State
@@ -26,6 +29,7 @@ class SearchFilterManager {
         this.totalItems = 0;
         this.isLoading = false;
         this.debounceTimer = null;
+        this.pendingPage = null;
 
         if (!this.endpoint || !this.container) {
             console.error('SearchFilterManager: Missing required options (endpoint, container)');
@@ -39,6 +43,14 @@ class SearchFilterManager {
         // Bind search input
         if (this.searchInput) {
             this.searchInput.addEventListener('input', () => this.debounceSearch());
+        }
+
+        // Bind optional search button to the same AJAX search flow as typing
+        if (this.searchButton) {
+            this.searchButton.addEventListener('click', () => {
+                clearTimeout(this.debounceTimer);
+                this.search();
+            });
         }
 
         // Bind filter selects
@@ -58,9 +70,19 @@ class SearchFilterManager {
     async search(page = 1) {
         this.currentPage = page;
 
-        if (this.isLoading) return;
+        clearTimeout(this.debounceTimer);
+
+        if (this.isLoading) {
+            this.pendingPage = page;
+            return;
+        }
         this.isLoading = true;
         this.showLoading();
+        this.clearPagination();
+
+        if (this.onLoading && typeof this.onLoading === 'function') {
+            this.onLoading();
+        }
 
         try {
             const filters = this.getFilters();
@@ -107,6 +129,11 @@ class SearchFilterManager {
             }
         } finally {
             this.isLoading = false;
+            if (this.pendingPage !== null) {
+                const nextPage = this.pendingPage;
+                this.pendingPage = null;
+                this.search(nextPage);
+            }
         }
     }
 
@@ -135,12 +162,14 @@ class SearchFilterManager {
     renderResults(items) {
         if (!items || items.length === 0) {
             this.showEmpty();
+            this.renderExternalPagination();
             return;
         }
 
         let html = items.map(item => this.itemTemplate(item)).join('');
         html += this.renderPagination();
         this.container.innerHTML = html;
+        this.renderExternalPagination();
 
         // Re-initialize any event listeners if needed
         this.attachPaginationEvents();
@@ -173,13 +202,28 @@ class SearchFilterManager {
         return html;
     }
 
-    attachPaginationEvents() {
-        this.container.querySelectorAll('[data-search-page]').forEach(button => {
+    renderExternalPagination() {
+        if (!this.paginationContainer) {
+            return;
+        }
+
+        this.paginationContainer.innerHTML = this.renderPagination();
+        this.attachPaginationEvents(this.paginationContainer);
+    }
+
+    attachPaginationEvents(root = this.container) {
+        root.querySelectorAll('[data-search-page]').forEach(button => {
             button.addEventListener('click', () => {
                 const page = parseInt(button.dataset.searchPage, 10);
                 this.goToPage(page);
             });
         });
+    }
+
+    clearPagination() {
+        if (this.paginationContainer) {
+            this.paginationContainer.innerHTML = '';
+        }
     }
 
     showLoading() {
@@ -201,6 +245,7 @@ class SearchFilterManager {
                 <p class="text-sm text-gray-400 mt-1">Try adjusting your search or filters</p>
             </div>
         `;
+        this.clearPagination();
     }
 
     showError(message) {

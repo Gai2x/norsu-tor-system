@@ -10,7 +10,9 @@ class AppointmentsPageController
     {
         $viewData = AdminPageController::boot(
             'Appointments',
-            'Manage Student Appointments'
+            'Manage Student Appointments',
+            [],
+            'appointments'
         );
 
         $conn = $viewData['conn'];
