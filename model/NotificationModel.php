@@ -31,6 +31,46 @@ class NotificationModel
         }));
     }
 
+    public function markAsRead(int $userId, string $notificationId): bool
+    {
+        if (strpos($notificationId, 'db-') !== 0) {
+            return false;
+        }
+
+        $id = (int) substr($notificationId, 3);
+        if ($id <= 0) {
+            return false;
+        }
+
+        $stmt = $this->conn->prepare("UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?");
+        if (!$stmt) {
+            return false;
+        }
+
+        $stmt->bind_param('ii', $id, $userId);
+        $result = $stmt->execute();
+        $stmt->close();
+
+        return $result;
+    }
+
+    public function createNotification(int $userId, string $title, string $message, string $type = 'info'): bool
+    {
+        $stmt = $this->conn->prepare(
+            "INSERT INTO notifications (user_id, title, message, type, is_read) VALUES (?, ?, ?, ?, 0)"
+        );
+
+        if (!$stmt) {
+            return false;
+        }
+
+        $stmt->bind_param('isss', $userId, $title, $message, $type);
+        $result = $stmt->execute();
+        $stmt->close();
+
+        return $result;
+    }
+
     private function ensureTable(): void
     {
         $this->conn->query("

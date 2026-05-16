@@ -23,7 +23,7 @@
         </div>
 
         <div class="overflow-x-auto">
-            <table class="w-full min-w-[980px] text-left">
+            <table id="requests-queue-table" class="w-full min-w-[980px] text-left">
                 <thead class="bg-gray-50 text-gray-600 uppercase text-sm">
                     <tr>
                         <th class="px-8 py-5">Reference No.</th>
@@ -35,7 +35,7 @@
                         <th class="px-8 py-5">Action</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="requests-queue-body">
                 <?php $requestCount = 0; if (isset($requests) && mysqli_num_rows($requests) > 0): ?>
                     <?php while ($row = mysqli_fetch_assoc($requests) and $requestCount < 3): $requestCount++; ?>
                     <tr class="border-t hover:bg-gray-50">
@@ -82,7 +82,7 @@
                 </a>
             </div>
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[600px] text-left text-sm">
+                <table id="appointments-table" class="w-full min-w-[600px] text-left text-sm">
                     <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
                         <tr>
                             <th class="px-6 py-4">ID</th>
@@ -91,7 +91,7 @@
                             <th class="px-6 py-4">Status</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="appointments-table-body">
                     <?php if (isset($appointments) && mysqli_num_rows($appointments) > 0): ?>
                         <?php while ($apt = mysqli_fetch_assoc($appointments)): ?>
                         <tr class="border-t hover:bg-gray-50">
@@ -197,6 +197,222 @@
         </div>
     </div>
     <?php endif; ?>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const AUTO_REFRESH_INTERVAL = 7000; // 7 seconds
+    let lastRefreshTime = new Date();
+    let refreshTimer = null;
+
+    /**
+     * Format appointment ID with padding
+     */
+    const formatAppointmentId = function(id) {
+        return 'APT-' + String(id).padStart(5, '0');
+    };
+
+    /**
+     * Format request ID with padding
+     */
+    const formatRequestId = function(id) {
+        return 'REQ-' + String(id).padStart(5, '0');
+    };
+
+    /**
+     * Format date to "M dd, Y" format
+     */
+    const formatDate = function(dateString) {
+        try {
+            const date = new Date(dateString);
+            const options = { month: 'short', day: '2-digit', year: 'numeric' };
+            return date.toLocaleDateString('en-US', options);
+        } catch (e) {
+            return 'N/A';
+        }
+    };
+
+    /**
+     * Get status badge HTML
+     */
+    const getStatusBadge = function(status) {
+        const statusLower = (status || 'pending').toLowerCase();
+        let classes = 'px-3 py-1 rounded-full text-sm font-semibold ';
+        
+        if (statusLower === 'approved') {
+            classes += 'bg-green-100 text-green-700';
+        } else if (statusLower === 'rejected') {
+            classes += 'bg-red-100 text-red-700';
+        } else if (statusLower === 'pending') {
+            classes += 'bg-yellow-100 text-yellow-700';
+        } else {
+            classes += 'bg-gray-100 text-gray-700';
+        }
+        
+        return '<span class="' + classes + '">' + (statusLower.charAt(0).toUpperCase() + statusLower.slice(1)) + '</span>';
+    };
+
+    /**
+     * Update requests table
+     */
+    const updateRequestsTable = function(requests) {
+        const tbody = document.getElementById('requests-queue-body');
+        if (!tbody) return;
+
+        if (!requests || requests.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-10 text-gray-500">No requests found.</td></tr>';
+            return;
+        }
+
+        let html = '';
+        let count = 0;
+        for (let i = 0; i < requests.length && count < 3; i++) {
+            const req = requests[i];
+            html += `
+                <tr class="border-t hover:bg-gray-50">
+                    <td class="px-8 py-5 font-semibold">${formatRequestId(req.id)}</td>
+                    <td class="px-8 py-5">${escapeHtml(req.name || 'N/A')}</td>
+                    <td class="px-8 py-5">${escapeHtml(req.student_id || 'N/A')}</td>
+                    <td class="px-8 py-5">${escapeHtml(req.service_type || 'N/A')}</td>
+                    <td class="px-8 py-5">${formatDate(req.created_at)}</td>
+                    <td class="px-8 py-5">${getStatusBadge(req.status)}</td>
+                    <td class="px-8 py-5">
+                        <a href="RequestView.php?id=${req.id}" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition no-underline">
+                            <i class="fas fa-eye"></i>View
+                        </a>
+                    </td>
+                </tr>
+            `;
+            count++;
+        }
+        tbody.innerHTML = html;
+    };
+
+    /**
+     * Update appointments table
+     */
+    const updateAppointmentsTable = function(appointments) {
+        const tbody = document.getElementById('appointments-table-body');
+        if (!tbody) return;
+
+        if (!appointments || appointments.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-gray-500">No appointments found.</td></tr>';
+            return;
+        }
+
+        let html = '';
+        for (let apt of appointments) {
+            html += `
+                <tr class="border-t hover:bg-gray-50">
+                    <td class="px-6 py-4 font-semibold">${formatAppointmentId(apt.id)}</td>
+                    <td class="px-6 py-4">${escapeHtml(apt.name || 'N/A')}</td>
+                    <td class="px-6 py-4">${formatDate(apt.appointment_date)}</td>
+                    <td class="px-6 py-4">${getStatusBadge(apt.status)}</td>
+                </tr>
+            `;
+        }
+        tbody.innerHTML = html;
+    };
+
+    /**
+     * Escape HTML to prevent XSS
+     */
+    const escapeHtml = function(text) {
+        const div = document.createElement('div');
+        div.textContent = text || '';
+        return div.innerHTML;
+    };
+
+    /**
+     * Fetch fresh dashboard data
+     */
+    const refreshDashboard = async function() {
+        try {
+            const response = await fetch('/Norsu_Tor/admin/ajax-dashboard-refresh?lastTimestamp=' + encodeURIComponent(lastRefreshTime.toISOString()), {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (!response.ok) {
+                console.error('Dashboard refresh failed:', response.status);
+                return;
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Update tables
+                if (data.requests && data.requests.length > 0) {
+                    updateRequestsTable(data.requests);
+                }
+                
+                if (data.appointments && data.appointments.length > 0) {
+                    updateAppointmentsTable(data.appointments);
+                }
+
+                // Update stats cards if they exist
+                if (data.counts) {
+                    updateStatsCards(data.counts);
+                }
+
+                lastRefreshTime = new Date();
+            }
+        } catch (error) {
+            console.error('Error refreshing dashboard:', error);
+        }
+    };
+
+    /**
+     * Update stats cards (if applicable)
+     */
+    const updateStatsCards = function(counts) {
+        // You can add stats card updates here if needed
+        // For now, we'll just update what's displayed on page load
+    };
+
+    /**
+     * Start auto-refresh
+     */
+    const startAutoRefresh = function() {
+        if (refreshTimer) clearInterval(refreshTimer);
+        
+        // Refresh immediately first
+        refreshDashboard();
+        
+        // Then refresh at intervals
+        refreshTimer = setInterval(refreshDashboard, AUTO_REFRESH_INTERVAL);
+    };
+
+    /**
+     * Stop auto-refresh
+     */
+    const stopAutoRefresh = function() {
+        if (refreshTimer) {
+            clearInterval(refreshTimer);
+            refreshTimer = null;
+        }
+    };
+
+    // Start auto-refresh when page loads
+    startAutoRefresh();
+
+    // Stop refresh if user leaves the page
+    window.addEventListener('beforeunload', stopAutoRefresh);
+    
+    // Pause refresh when page is hidden, resume when visible
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            stopAutoRefresh();
+        } else {
+            startAutoRefresh();
+        }
+    });
+});
+</script>
 
 </div>
 

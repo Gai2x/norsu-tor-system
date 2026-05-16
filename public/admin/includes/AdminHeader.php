@@ -165,6 +165,7 @@ if (!function_exists('adminNavClasses')) {
                 <?php
                 $notificationModalId = 'adminNotificationModal';
                 $notificationBadgeCount = ($stats['pending_requests'] ?? 0) + ($stats['pending_appointments'] ?? 0);
+                $notificationBasePath = '/Norsu_Tor/admin';
                 include __DIR__ . '/../../includes/shared/NotificationModal.php';
                 ?>
 

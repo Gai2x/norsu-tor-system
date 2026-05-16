@@ -266,6 +266,35 @@ class AppointmentModel {
         return ['success' => false, 'error' => $error];
     }
 
+    public function getAppointmentWithUserEmail(int $appointment_id)
+    {
+        $sql = "
+            SELECT
+                a.*, 
+                s.email,
+                s.name,
+                s.student_id,
+                a.user_id
+            FROM appointments a
+            LEFT JOIN students s ON a.user_id = s.id
+            WHERE a.id = ?
+            LIMIT 1
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        if (!$stmt) {
+            return null;
+        }
+
+        $stmt->bind_param('i', $appointment_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $appointment = $result ? $result->fetch_assoc() : null;
+        $stmt->close();
+
+        return $appointment ?: null;
+    }
+
     /*
     =========================
         ADMIN FUNCTION (NEW)

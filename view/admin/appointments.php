@@ -242,6 +242,10 @@ document.addEventListener('DOMContentLoaded', function() {
         return Number.isNaN(date.getTime()) ? value : date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
     };
 
+    const formatAppointmentId = function(id) {
+        return 'APT-' + String(id).padStart(5, '0');
+    };
+
     const statusBadge = function(statusValue, textSize = 'text-sm') {
         const status = String(statusValue || 'pending').toLowerCase();
         const classes = status === 'approved'
@@ -287,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         },
         itemTemplate: function(appointment) {
-            const id = escapeHtml(appointment.id);
+            const id = formatAppointmentId(appointment.id);
             const name = escapeHtml(appointment.name || 'N/A');
             const studentId = escapeHtml(appointment.student_id || 'N/A');
             const service = escapeHtml(appointment.service_type || appointment.appointment_type || 'N/A');
@@ -298,7 +302,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <article class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-4">
                     <div class="flex items-start justify-between gap-3">
                         <div>
-                            <p class="text-xs font-semibold tracking-wide text-gray-400 uppercase">#APT-${id}</p>
+                            <p class="text-xs font-semibold tracking-wide text-gray-400 uppercase">${id}</p>
                             <h4 class="text-lg font-semibold text-gray-800 mt-1">${name}</h4>
                             <p class="text-sm text-gray-500">${studentId}</p>
                         </div>
@@ -325,10 +329,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             tableBody.innerHTML = items.map(function(appointment) {
-                const id = escapeHtml(appointment.id);
+                const id = formatAppointmentId(appointment.id);
                 return `
                     <tr class="border-t hover:bg-gray-50">
-                        <td class="px-6 lg:px-8 py-5 font-semibold sticky left-0 bg-white">#APT-${id}</td>
+                        <td class="px-6 lg:px-8 py-5 font-semibold sticky left-0 bg-white">${id}</td>
                         <td class="px-6 lg:px-8 py-5">${escapeHtml(appointment.name || 'N/A')}</td>
                         <td class="px-6 lg:px-8 py-5">${escapeHtml(appointment.student_id || 'N/A')}</td>
                         <td class="px-6 lg:px-8 py-5">${escapeHtml(appointment.service_type || appointment.appointment_type || 'N/A')}</td>
@@ -349,6 +353,9 @@ document.addEventListener('DOMContentLoaded', function() {
             search.reset();
         });
     }
+
+    // Auto-refresh the appointment list periodically without reloading the page
+    search.startAutoRefresh(8000);
 });
 </script>
 HTML; ?>

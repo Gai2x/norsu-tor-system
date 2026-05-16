@@ -333,6 +333,9 @@ document.addEventListener('DOMContentLoaded', function() {
             search.reset();
         });
     }
+
+    // Auto-refresh the request list periodically without reloading the page
+    search.startAutoRefresh(8000);
 });
 </script>
 HTML; ?>

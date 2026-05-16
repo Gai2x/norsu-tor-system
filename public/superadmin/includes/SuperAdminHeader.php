@@ -123,6 +123,7 @@ if (!function_exists('superAdminNavClasses')) {
                 <?php
                 $notificationModalId = 'superadminNotificationModal';
                 $notificationBadgeCount = ($stats['pending_requests'] ?? 0) + ($stats['pending_appointments'] ?? 0);
+                $notificationBasePath = '/Norsu_Tor/superadmin';
                 include __DIR__ . '/../../includes/shared/NotificationModal.php';
                 ?>
                 <div class="flex items-center gap-2 sm:gap-3 p-1 sm:p-2 rounded-xl">

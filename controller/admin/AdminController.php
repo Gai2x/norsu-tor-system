@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../../database/connection.php';
 require_once __DIR__ . '/../../model/UserRoleModel.php';
+require_once __DIR__ . '/../../service/EmailNotificationService.php';
+require_once __DIR__ . '/../../model/NotificationModel.php';
 
 class AdminController {
 
@@ -9,8 +11,8 @@ class AdminController {
     | UPDATE REQUEST STATUS (APPROVE / REJECT)
     |----------------------------------------------------
     */
-    public static function updateRequestStatus($conn){
-
+    public static function updateRequestStatus($conn)
+    {
         if (!isset($_GET['approve']) && !isset($_GET['reject'])) {
             return;
         }
@@ -23,18 +25,75 @@ class AdminController {
 
         // Choose table safely
         $table = ($type === 'one_time') ? 'one_time_requests' : 'requests';
+        $context = self::getRequestApprovalContext($conn, $table, $id);
 
         $stmt = $conn->prepare("UPDATE $table SET status=? WHERE id=?");
-
         if (!$stmt) {
             die("Prepare failed: " . $conn->error);
         }
 
         $stmt->bind_param("si", $status, $id);
         $stmt->execute();
+        $stmt->close();
+
+        if ($status === 'approved' && $context !== null && strtolower($context['status'] ?? '') !== 'approved') {
+            self::sendRequestApprovalNotifications($conn, $context, $table);
+        }
 
         header("Location: Requests.php");
         exit();
+    }
+
+    private static function getRequestApprovalContext($conn, string $table, int $id): ?array
+    {
+        if ($table === 'one_time_requests') {
+            $stmt = $conn->prepare(
+                "SELECT id, email, fullname AS name, service_type, status, NULL AS user_id, 'one_time' AS type FROM one_time_requests WHERE id = ?"
+            );
+        } else {
+            $stmt = $conn->prepare(
+                "SELECT r.id, s.email, s.name, r.service_type, r.status, r.user_id, 'regular' AS type FROM requests r LEFT JOIN students s ON r.user_id = s.id WHERE r.id = ?"
+            );
+        }
+
+        if (!$stmt) {
+            return null;
+        }
+
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $context = $result ? $result->fetch_assoc() : null;
+        $stmt->close();
+
+        return $context ?: null;
+    }
+
+    private static function sendRequestApprovalNotifications($conn, array $context, string $table): void
+    {
+        $recipient = trim((string) ($context['email'] ?? ''));
+        if ($recipient === '' || !filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+            return;
+        }
+
+        $requestType = $context['type'] === 'one_time' ? 'One-time request' : 'Request';
+        $subject = "$requestType approved";
+        $body = "Hello " . trim((string) ($context['name'] ?? 'Student')) . ",\n\n" .
+            "Your $requestType for \"" . trim((string) ($context['service_type'] ?? 'your selected service')) . "\" has been approved.\n\n" .
+            "Thank you for using the NORSU system.\n\n" .
+            "- NORSU Appointment System";
+
+        EmailNotificationService::sendEmail($recipient, $subject, $body);
+
+        if (!empty($context['user_id']) && (int) $context['user_id'] > 0) {
+            $notificationModel = new NotificationModel($conn);
+            $notificationModel->createNotification(
+                (int) $context['user_id'],
+                $subject,
+                "Your $requestType was approved.\nService: " . trim((string) ($context['service_type'] ?? 'N/A')),
+                'request'
+            );
+        }
     }
     /*
     |----------------------------------------------------
@@ -218,6 +277,156 @@ class AdminController {
                 'totalItems' => $totalAppointments,
                 'totalPages' => max(1, (int) ceil($totalAppointments / $pageSize)),
             ],
+        ]);
+        exit;
+    }
+
+    /**
+     * AJAX: Fetch fresh dashboard data for auto-refresh
+     */
+    public static function ajaxDashboardRefresh($conn)
+    {
+        header('Content-Type: application/json');
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+            exit;
+        }
+
+        // Get last timestamp to fetch only new records
+        $lastTimestamp = isset($_GET['lastTimestamp']) ? $_GET['lastTimestamp'] : date('Y-m-d H:i:s', strtotime('-24 hours'));
+        
+        // Fetch recent requests
+        $requestsQuery = "
+            SELECT * FROM (
+                SELECT
+                    r.id,
+                    COALESCE(s.name, 'N/A') AS name,
+                    COALESCE(s.student_id, 'N/A') AS student_id,
+                    r.service_type,
+                    r.status,
+                    r.created_at,
+                    'regular' AS type
+                FROM requests r
+                LEFT JOIN students s ON r.user_id = s.id
+
+                UNION ALL
+
+                SELECT
+                    otr.id,
+                    COALESCE(otr.fullname, 'N/A') AS name,
+                    COALESCE(otr.student_id, 'N/A') AS student_id,
+                    otr.service_type,
+                    otr.status,
+                    otr.created_at,
+                    'one_time' AS type
+                FROM one_time_requests otr
+            ) AS all_requests
+            ORDER BY created_at DESC, id DESC
+            LIMIT 3
+        ";
+        
+        $requestsResult = $conn->query($requestsQuery);
+        $requests = [];
+        if ($requestsResult) {
+            while ($row = $requestsResult->fetch_assoc()) {
+                $requests[] = $row;
+            }
+        }
+
+        // Fetch recent appointments
+        $appointmentsQuery = "
+            SELECT
+                a.id,
+                a.appointment_date,
+                a.appointment_time,
+                a.status,
+                s.name,
+                s.student_id,
+                a.service_type
+            FROM appointments a
+            LEFT JOIN students s ON a.user_id = s.id
+            ORDER BY a.appointment_date DESC, a.appointment_time DESC
+            LIMIT 3
+        ";
+        
+        $appointmentsResult = $conn->query($appointmentsQuery);
+        $appointments = [];
+        if ($appointmentsResult) {
+            while ($row = $appointmentsResult->fetch_assoc()) {
+                $appointments[] = $row;
+            }
+        }
+
+        // Get counts
+        $counts = [
+            'totalRequests' => 0,
+            'pendingRequests' => 0,
+            'approvedRequests' => 0,
+            'rejectedRequests' => 0,
+            'totalAppointments' => 0,
+            'pendingAppointments' => 0,
+        ];
+
+        // Count total requests
+        $totalRequestsQuery = $conn->query("SELECT COUNT(*) as total FROM requests");
+        if ($totalRequestsQuery) {
+            $counts['totalRequests'] = (int) $totalRequestsQuery->fetch_assoc()['total'];
+        }
+        $oneTimeTotalQuery = $conn->query("SELECT COUNT(*) as total FROM one_time_requests");
+        if ($oneTimeTotalQuery) {
+            $counts['totalRequests'] += (int) $oneTimeTotalQuery->fetch_assoc()['total'];
+        }
+
+        // Count pending requests
+        $pendingRequestsQuery = $conn->query("SELECT COUNT(*) as total FROM requests WHERE status='pending'");
+        if ($pendingRequestsQuery) {
+            $counts['pendingRequests'] = (int) $pendingRequestsQuery->fetch_assoc()['total'];
+        }
+        $oneTimePendingQuery = $conn->query("SELECT COUNT(*) as total FROM one_time_requests WHERE status='pending'");
+        if ($oneTimePendingQuery) {
+            $counts['pendingRequests'] += (int) $oneTimePendingQuery->fetch_assoc()['total'];
+        }
+
+        // Count approved requests
+        $approvedRequestsQuery = $conn->query("SELECT COUNT(*) as total FROM requests WHERE status='approved'");
+        if ($approvedRequestsQuery) {
+            $counts['approvedRequests'] = (int) $approvedRequestsQuery->fetch_assoc()['total'];
+        }
+        $oneTimeApprovedQuery = $conn->query("SELECT COUNT(*) as total FROM one_time_requests WHERE status='approved'");
+        if ($oneTimeApprovedQuery) {
+            $counts['approvedRequests'] += (int) $oneTimeApprovedQuery->fetch_assoc()['total'];
+        }
+
+        // Count rejected requests
+        $rejectedRequestsQuery = $conn->query("SELECT COUNT(*) as total FROM requests WHERE status='rejected'");
+        if ($rejectedRequestsQuery) {
+            $counts['rejectedRequests'] = (int) $rejectedRequestsQuery->fetch_assoc()['total'];
+        }
+        $oneTimeRejectedQuery = $conn->query("SELECT COUNT(*) as total FROM one_time_requests WHERE status='rejected'");
+        if ($oneTimeRejectedQuery) {
+            $counts['rejectedRequests'] += (int) $oneTimeRejectedQuery->fetch_assoc()['total'];
+        }
+
+        // Count total appointments
+        $totalAppointmentsQuery = $conn->query("SELECT COUNT(*) as total FROM appointments");
+        if ($totalAppointmentsQuery) {
+            $counts['totalAppointments'] = (int) $totalAppointmentsQuery->fetch_assoc()['total'];
+        }
+
+        // Count pending appointments
+        $pendingAppointmentsQuery = $conn->query("SELECT COUNT(*) as total FROM appointments WHERE status='pending'");
+        if ($pendingAppointmentsQuery) {
+            $counts['pendingAppointments'] = (int) $pendingAppointmentsQuery->fetch_assoc()['total'];
+        }
+
+        echo json_encode([
+            'success' => true,
+            'requests' => $requests,
+            'appointments' => $appointments,
+            'counts' => $counts,
+            'timestamp' => date('Y-m-d H:i:s'),
         ]);
         exit;
     }

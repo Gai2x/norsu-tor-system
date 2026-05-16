@@ -2,6 +2,8 @@
 require_once __DIR__ . '/../../model/user/AppointmentModel.php';
 require_once __DIR__ . '/../../database/Connection.php';
 require_once __DIR__ . '/../../model/UserRoleModel.php';
+require_once __DIR__ . '/../../service/EmailNotificationService.php';
+require_once __DIR__ . '/../../model/NotificationModel.php';
 class AppointmentController {
     private $model;
 
@@ -110,8 +112,15 @@ class AppointmentController {
 
     // ✅ ADMIN: approve appointment
     public function approveAppointment($appointment_id) {
+        $appointment = $this->model->getAppointmentWithUserEmail((int) $appointment_id);
         $scheduleId = $this->model->findBestScheduleForAppointment((int) $appointment_id);
-        return $this->updateAppointmentStatus($appointment_id, "approved", null, $scheduleId);
+        $result = $this->updateAppointmentStatus($appointment_id, "approved", null, $scheduleId);
+
+        if ($result['success'] && $appointment && strtolower($appointment['status'] ?? '') !== 'approved') {
+            $this->sendAppointmentApprovalNotification($appointment);
+        }
+
+        return $result;
     }
 
     // ✅ ADMIN: reject/cancel appointment
@@ -144,6 +153,38 @@ class AppointmentController {
             'success' => false,
             'message' => 'Error updating appointment: ' . $result['error']
         ];
+    }
+
+    private function sendAppointmentApprovalNotification(array $appointment): void
+    {
+        $recipient = trim((string) ($appointment['email'] ?? ''));
+        if ($recipient === '' || !filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+            return;
+        }
+
+        $formattedDate = isset($appointment['appointment_date']) ? date('M j, Y', strtotime($appointment['appointment_date'])) : 'N/A';
+        $formattedTime = isset($appointment['appointment_time']) ? date('g:i A', strtotime($appointment['appointment_time'])) : 'N/A';
+        $appointmentId = 'APT-' . str_pad((int) $appointment['id'], 5, '0', STR_PAD_LEFT);
+        $serviceType = trim((string) ($appointment['service_type'] ?? $appointment['appointment_type'] ?? 'Appointment'));
+
+        $subject = 'Your appointment has been approved';
+        $body = "Hello " . trim((string) ($appointment['name'] ?? 'Student')) . ",\n\n" .
+            "Your appointment request for \"$serviceType\" on $formattedDate at $formattedTime has been approved.\n" .
+            "Appointment ID: $appointmentId\n\n" .
+            "You can view the details in your dashboard.\n\n" .
+            "- NORSU Appointment System";
+
+        EmailNotificationService::sendEmail($recipient, $subject, $body);
+
+        if (!empty($appointment['user_id']) && (int) $appointment['user_id'] > 0) {
+            $notificationModel = new NotificationModel(Connection::getInstance());
+            $notificationModel->createNotification(
+                (int) $appointment['user_id'],
+                $subject,
+                "Your appointment for $serviceType has been approved. Appointment ID: $appointmentId.",
+                'appointment'
+            );
+        }
     }
 
 } 

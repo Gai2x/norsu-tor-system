@@ -143,6 +143,7 @@ $userHeader = $userHeader ?? null;
                 <?php
                 $notificationModalId = 'userNotificationModal';
                 $notificationBadgeCount = $stats['pending_requests'] ?? 0;
+                $notificationBasePath = '';
                 include __DIR__ . '/../shared/NotificationModal.php';
                 ?>
 

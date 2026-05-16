@@ -30,6 +30,9 @@ class SearchFilterManager {
         this.isLoading = false;
         this.debounceTimer = null;
         this.pendingPage = null;
+        this.autoRefreshTimer = null;
+        this.autoRefreshVisibilityHandler = null;
+        this.autoRefreshIntervalValue = null;
 
         if (!this.endpoint || !this.container) {
             console.error('SearchFilterManager: Missing required options (endpoint, container)');
@@ -280,6 +283,46 @@ class SearchFilterManager {
         });
         this.currentPage = 1;
         this.search();
+    }
+
+    // Start auto-refresh polling
+    startAutoRefresh(interval = 7000) {
+        this.stopAutoRefresh();
+        this.autoRefreshIntervalValue = interval;
+
+        this.autoRefreshTimer = setInterval(() => {
+            if (!document.hidden) {
+                this.search(this.currentPage || 1);
+            }
+        }, interval);
+
+        if (!this.autoRefreshVisibilityHandler) {
+            this.autoRefreshVisibilityHandler = () => {
+                if (document.hidden) {
+                    this.stopAutoRefresh();
+                } else {
+                    this.search(this.currentPage || 1);
+                    if (!this.autoRefreshTimer) {
+                        this.autoRefreshTimer = setInterval(() => {
+                            if (!document.hidden) {
+                                this.search(this.currentPage || 1);
+                            }
+                        }, this.autoRefreshIntervalValue || interval);
+                    }
+                }
+            };
+            document.addEventListener('visibilitychange', this.autoRefreshVisibilityHandler);
+        }
+
+        return this;
+    }
+
+    // Stop auto-refresh polling
+    stopAutoRefresh() {
+        if (this.autoRefreshTimer) {
+            clearInterval(this.autoRefreshTimer);
+            this.autoRefreshTimer = null;
+        }
     }
 
     // Go to specific page
