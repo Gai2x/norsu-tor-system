@@ -1,9 +1,12 @@
 FROM php:8.2-apache
 
+# Disable conflicting MPM modules - keep only mpm_prefork for mod_php
+RUN a2dismod mpm_event mpm_worker || true
+
 # Install mysqli extension
 RUN docker-php-ext-install mysqli
 
-# Enable Apache mod_rewrite if needed
+# Enable Apache mod_rewrite
 RUN a2enmod rewrite
 
 # Copy application files
