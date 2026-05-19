@@ -3,7 +3,8 @@ FROM php:8.2-apache
 # CRITICAL: Disable conflicting MPM modules FIRST
 # The base image has mpm_prefork, mpm_event, and mpm_worker all enabled
 # Apache only allows ONE MPM - we keep mpm_prefork for mod_php
-RUN a2dismod mpm_event mpm_worker
+RUN a2dismod mpm_event mpm_worker || true && \
+    a2enmod mpm_prefork
 
 # Install mysqli extension
 RUN docker-php-ext-install mysqli
