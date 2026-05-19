@@ -65,12 +65,12 @@ function resolveNotificationUrl(array $notification, string $role): string
 
     if ($role === 'admin') {
         if ($type === 'appointment') {
-            return NOTIFICATION_BASE_PATH . '/admin/Appointments.php';
+            return NOTIFICATION_BASE_PATH . '/public/admin/Appointments.php';
         }
         if ($type === 'request') {
-            return NOTIFICATION_BASE_PATH . '/admin/Requests.php';
+            return NOTIFICATION_BASE_PATH . '/public/admin/Requests.php';
         }
-        return NOTIFICATION_BASE_PATH . '/admin/Dashboard.php';
+        return NOTIFICATION_BASE_PATH . '/public/admin/Dashboard.php';
     }
 
     if ($role === 'super_admin') {
