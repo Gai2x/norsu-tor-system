@@ -1,9 +1,10 @@
 <?php
 
-$host = "localhost";
-$user = "root";
-$password = "";
-$database = "norsu_system";
+// Read from environment variables, fallback to localhost for development
+$host = getenv('DATABASE_HOST') ?: 'localhost';
+$user = getenv('DATABASE_USER') ?: 'root';
+$password = getenv('DATABASE_PASSWORD') ?: '';
+$database = getenv('DATABASE_NAME') ?: 'norsu_system';
 
 $conn = mysqli_connect($host, $user, $password, $database);
 
@@ -22,10 +23,10 @@ if (!class_exists('Connection')) {
                 return self::$instance;
             }
 
-            $host = "localhost";
-            $user = "root";
-            $password = "";
-            $database = "norsu_system";
+            $host = getenv('DATABASE_HOST') ?: 'localhost';
+            $user = getenv('DATABASE_USER') ?: 'root';
+            $password = getenv('DATABASE_PASSWORD') ?: '';
+            $database = getenv('DATABASE_NAME') ?: 'norsu_system';
 
             self::$instance = mysqli_connect($host, $user, $password, $database);
 
